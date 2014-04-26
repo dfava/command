@@ -13,6 +13,7 @@
     NExpression *expr;
     NStatement *stmt;
     NIdentifier *ident;
+    NType *type;
     NVariableDeclaration *var_decl;
     std::vector<NVariableDeclaration*> *varvec;
     std::vector<NExpression*> *exprvec;
@@ -24,18 +25,19 @@
    match our tokens.l lex file. We also define the node type
    they represent.
  */
-%token <string> TIDENTIFIER TINTEGER TDOUBLE
+%token <string> T_TYPE T_IDENTIFIER T_VAL_INTEGER T_VAL_DOUBLE T_VAL_BOOL
 %token <token> TCEQ TCNE TCLT TCLE TCGT TCGE TEQUAL
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TCOMMA TDOT
-%token <token> TPLUS TMINUS TMUL TDIV
+%token <token> TPLUS TMINUS TMUL TDIV TSC
 
 /* Define the type of node our nonterminal symbols represent.
    The types refer to the %union declaration above. Ex: when
    we call an ident (defined by union type ident) we are really
    calling an (NIdentifier*). It makes the compiler happy.
  */
+%type <type> type
 %type <ident> ident
-%type <expr> numeric expr 
+%type <expr> numeric boolean expr 
 %type <varvec> func_decl_args
 %type <exprvec> call_args
 %type <block> program stmts block
@@ -66,11 +68,11 @@ block : TLBRACE stmts TRBRACE { $$ = $2; }
       | TLBRACE TRBRACE { $$ = new NBlock(); }
       ;
 
-var_decl : ident ident { $$ = new NVariableDeclaration(*$1, *$2); }
-         | ident ident TEQUAL expr { $$ = new NVariableDeclaration(*$1, *$2, $4); }
+var_decl : type ident TSC { $$ = new NVariableDeclaration(*$1, *$2); }
+         | type ident TEQUAL expr TSC{ $$ = new NVariableDeclaration(*$1, *$2, $4); }
          ;
         
-func_decl : ident ident TLPAREN func_decl_args TRPAREN block 
+func_decl : type ident TLPAREN func_decl_args TRPAREN block 
             { $$ = new NFunctionDeclaration(*$1, *$2, *$4, *$6); delete $4; }
           ;
     
@@ -79,17 +81,24 @@ func_decl_args : /*blank*/  { $$ = new VariableList(); }
           | func_decl_args TCOMMA var_decl { $1->push_back($<var_decl>3); }
           ;
 
-ident : TIDENTIFIER { $$ = new NIdentifier(*$1); delete $1; }
+ident : T_IDENTIFIER { $$ = new NIdentifier(*$1); delete $1; }
       ;
 
-numeric : TINTEGER { $$ = new NInteger(atol($1->c_str())); delete $1; }
-        | TDOUBLE { $$ = new NDouble(atof($1->c_str())); delete $1; }
+type : T_TYPE { $$ = new NType(*$1); delete $1; }
+      ;
+
+numeric : T_VAL_INTEGER { $$ = new NInteger(atol($1->c_str())); delete $1; }
+        | T_VAL_DOUBLE { $$ = new NDouble(atof($1->c_str())); delete $1; }
+        ;
+
+boolean : T_VAL_BOOL { $$ = new NBool($1->c_str()); delete $1; }
         ;
     
-expr : ident TEQUAL expr { $$ = new NAssignment(*$<ident>1, *$3); }
+expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); }
      | ident TLPAREN call_args TRPAREN { $$ = new NMethodCall(*$1, *$3); delete $3; }
-     | ident { $<ident>$ = $1; }
+     | ident TSC { $<ident>$ = $1; }
      | numeric
+     | boolean 
      | expr TPLUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
      | expr TMINUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
      | expr TMUL expr { $$ = new NBinaryOperator(*$1, $2, *$3); }

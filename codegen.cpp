@@ -48,7 +48,7 @@ GenericValue CodeGenContext::runCode() {
 }
 
 /* Returns an LLVM type based on the identifier */
-static const Type *typeOf(const NIdentifier& type) 
+static const Type *typeOf(const NType& type) 
 {
 	if (type.name.compare("int") == 0) {
 		return Type::getInt64Ty(getGlobalContext());
@@ -56,6 +56,9 @@ static const Type *typeOf(const NIdentifier& type)
 	else if (type.name.compare("double") == 0) {
 		return Type::getDoubleTy(getGlobalContext());
 	}
+  else if (type.name.compare("bool") == 0) {
+		return Type::getInt1Ty(getGlobalContext());
+  }
 	return Type::getVoidTy(getGlobalContext());
 }
 
@@ -71,6 +74,21 @@ Value* NDouble::codeGen(CodeGenContext& context)
 {
 	std::cout << "Creating double: " << value << std::endl;
 	return ConstantFP::get(Type::getDoubleTy(getGlobalContext()), value);
+}
+
+Value* NBool::codeGen(CodeGenContext& context)
+{
+	std::cout << "Creating boolean: " << value << std::endl;
+  if (value.compare("true") == 0)
+	  return ConstantInt::getTrue(getGlobalContext());
+  assert (value.compare("false") == 0);
+	return ConstantInt::getFalse(getGlobalContext());
+}
+
+Value* NType::codeGen(CodeGenContext& context)
+{
+  // TODO: This is totally bogus. It is just a stub. Remove it.
+  return ConstantFP::get(Type::getDoubleTy(getGlobalContext()), 0);
 }
 
 Value* NIdentifier::codeGen(CodeGenContext& context)
@@ -160,6 +178,8 @@ Value* NMethodCall::codeGen(CodeGenContext& context)
 	return call;
 }
 
+// TODO: Treat argument list as "NType NIdentifier, ...." 
+// as opposed to "NTIdentifier NIdentifier, ...."
 Value* NFunctionDeclaration::codeGen(CodeGenContext& context)
 {
   SmallVector<llvm::Type *, 100> argTypes;
