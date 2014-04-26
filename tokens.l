@@ -11,6 +11,7 @@ extern "C" int yywrap() { }
 %%
 
 [ \t\n]                 ;
+"//".*\n                  ;
 "int"                   SAVE_TOKEN; return T_TYPE;
 "double"                SAVE_TOKEN; return T_TYPE; 
 "bool"                  SAVE_TOKEN; return T_TYPE;
