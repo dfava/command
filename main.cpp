@@ -1,19 +1,52 @@
 #include <iostream>
+#include <stdio.h> // fopen
+#include <unistd.h> // getopt
+#include <libgen.h> // basename
 #include "codegen.h"
 #include "node.h"
+
+#define DEBUG 1
+#define DPRNT(fmt, ...) do { if (DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
 
 using namespace std;
 
 extern int yyparse();
+extern FILE* yyin;
 extern NBlock* programBlock;
+
+void usage(int argc, char** argv) {
+    printf("%s:\n", basename(argv[0]));
+    printf("  A compiler for the command language.\n");
+}
 
 int main(int argc, char **argv)
 {
-    if (int ret = yyparse()) {
-      return ret;
+    char* file = NULL;
+    int c;
+    opterr = 0;
+    while ((c = getopt (argc, argv, "f:h")) != -1)
+       switch (c)
+       {
+       case 'f':
+         file = optarg;
+         break;
+       case 'h':
+         usage(argc, argv);
+         return 1;
+       default:
+         abort();
+       }
+    if (file != NULL) {
+      FILE* fhandle = fopen(file, "r");
+      if (fhandle == NULL) {
+        fprintf(stderr, "ERR: Could not open file %s\n", file);
+        return 1;
+      }
+      printf( "%s\n", file);
+      yyin = fhandle;
     }
-    std::cout << programBlock << std::endl;
-
+    if (int ret = yyparse()) return ret;
+    DPRNT("programBlock: %p\n", programBlock);
     CodeGenContext context;
     context.generateCode(*programBlock);
     context.runCode();
