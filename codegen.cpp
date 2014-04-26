@@ -10,7 +10,6 @@ void CodeGenContext::generateCode(NBlock& root)
 	std::cout << "Generating code...\n";
 	
 	/* Create the top level interpreter function to call as entry */
-	//vector<const Type*> argTypes;
   ArrayRef<llvm::Type *> argTypes;
 	FunctionType *ftype = FunctionType::get(Type::getVoidTy(getGlobalContext()), argTypes, false);
 	mainFunction = Function::Create(ftype, GlobalValue::InternalLinkage, "main", module);
@@ -29,9 +28,6 @@ void CodeGenContext::generateCode(NBlock& root)
 	   to see if our program compiled properly
 	 */
 	std::cout << "Code is generated.\n";
-	//PassManager pm;
-	//pm.add(createPrintModulePass(&outs()));
-	//pm.run(*module);
   module->dump();
 }
 
@@ -87,6 +83,7 @@ Value* NBool::codeGen(CodeGenContext& context)
 
 Value* NType::codeGen(CodeGenContext& context)
 {
+  assert(0);
   // TODO: This is totally bogus. It is just a stub. Remove it.
   return ConstantFP::get(Type::getDoubleTy(getGlobalContext()), 0);
 }

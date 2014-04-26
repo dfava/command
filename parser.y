@@ -3,7 +3,14 @@
     NBlock *programBlock; /* the top level root node of our final AST */
 
     extern int yylex();
-    void yyerror(const char *s) { printf("ERROR: %s\n", s); }
+    extern int yylineno;
+    void yyerror(const char *s, ...) {
+      va_list ap;
+      va_start(ap, s);
+      fprintf(stderr, "ERR: line %d\n", yylineno);
+      vfprintf(stderr, s, ap);
+      fprintf(stderr, "\n");
+    }
 %}
 
 /* Represents the many different ways we can access our data */
@@ -95,7 +102,7 @@ boolean : T_VAL_BOOL { $$ = new NBool($1->c_str()); delete $1; }
         ;
     
 expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); }
-     | ident TLPAREN call_args TRPAREN { $$ = new NMethodCall(*$1, *$3); delete $3; }
+     | ident TLPAREN call_args TRPAREN TSC { $$ = new NMethodCall(*$1, *$3); delete $3; }
      | ident TSC { $<ident>$ = $1; }
      | numeric
      | boolean 

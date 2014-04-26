@@ -9,7 +9,9 @@ extern NBlock* programBlock;
 
 int main(int argc, char **argv)
 {
-    yyparse();
+    if (int ret = yyparse()) {
+      return ret;
+    }
     std::cout << programBlock << std::endl;
 
     CodeGenContext context;
