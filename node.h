@@ -58,6 +58,16 @@ public:
     virtual llvm::Value* codeGen(CodeGenContext& context);
 };
 
+class NIfExpression : public NExpression {
+public:
+    NExpression& iguard;
+    NExpression& ithen;
+    NExpression& ielse;
+    NIfExpression(NExpression& iguard, NExpression& ithen, NExpression& ielse) :
+        iguard(iguard), ithen(ithen), ielse(ielse) { }
+    virtual llvm::Value* codeGen(CodeGenContext& context);
+};
+
 class NMethodCall : public NExpression {
 public:
     const NIdentifier& id;

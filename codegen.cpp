@@ -140,6 +140,35 @@ math:
 		rhs.codeGen(context), "", context.currentBlock());
 }
 
+Value* NIfExpression::codeGen(CodeGenContext& context)
+{
+	std::cout << "Generating code for if-then-else" << std::endl;
+  Value *guardV = iguard.codeGen(context);
+  if (guardV == 0) return 0;
+ 
+  Function* function = context.currentBlock()->getParent();
+  BasicBlock *thenBB = BasicBlock::Create(getGlobalContext(), "then", function);
+  BasicBlock *elseBB = BasicBlock::Create(getGlobalContext(), "else");
+  BasicBlock *mergeBB = BasicBlock::Create(getGlobalContext(), "ifcont");
+
+  // TODO: Fill in the stub
+  /*
+  Builder.CreateCondBr(guardV, thenBB, elseBB);
+
+  // Emit then value.
+  Builder.SetInsertPoint(ThenBB);
+
+  Value *ThenV = Then->Codegen();
+  if (ThenV == 0) return 0;
+
+  Builder.CreateBr(MergeBB);
+  // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
+  ThenBB = Builder.GetInsertBlock();
+  */
+
+  return (Value*) NULL;
+}
+
 Value* NExpressionStatement::codeGen(CodeGenContext& context)
 {
 	std::cout << "Generating code for " << typeid(expression).name() << std::endl;
