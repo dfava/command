@@ -36,6 +36,7 @@
 %token <token> TCEQ TCNE TCLT TCLE TCGT TCGE TEQUAL
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TCOMMA TDOT
 %token <token> TPLUS TMINUS TMUL TDIV TSC
+%token <token> TIF TTHEN TELSE
 
 /* Define the type of node our nonterminal symbols represent.
    The types refer to the %union declaration above. Ex: when
@@ -51,6 +52,8 @@
 %type <stmt> stmt var_decl func_decl
 
 /* Operator precedence */
+%nonassoc TTHEN
+%nonassoc TELSE
 %nonassoc TCEQ TCNE TCLT TCLE TCGT TCGE 
 %right TEQUAL
 %left TPLUS TMINUS
@@ -103,7 +106,8 @@ boolean : T_VAL_BOOL { $$ = new NBool($1->c_str()); delete $1; }
     
 expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); }
      | ident TLPAREN call_args TRPAREN TSC { $$ = new NMethodCall(*$1, *$3); delete $3; }
-     | ident TSC { $<ident>$ = $1; }
+     | ident { $<ident>$ = $1; }
+     | TIF expr TTHEN expr TELSE expr { $$ = new NIfExpression(*$2, *$4, *$6); }
      | numeric
      | boolean 
      | expr TPLUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
