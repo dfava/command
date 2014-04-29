@@ -81,33 +81,23 @@ block : TLBRACE stmts TRBRACE { $$ = $2; }
 var_decl : type ident TSC { $$ = new NVariableDeclaration(*$1, *$2); }
          | type ident TEQUAL expr TSC{ $$ = new NVariableDeclaration(*$1, *$2, $4); }
          ;
-        
+
 func_decl : type ident TLPAREN func_decl_args TRPAREN block 
             { $$ = new NFunctionDeclaration(*$1, *$2, *$4, *$6); delete $4; }
           ;
     
+type : T_TYPE { $$ = new NType(*$1); delete $1; }
+      ;
+ 
 func_decl_args : /*blank*/  { $$ = new VariableList(); }
           | var_decl { $$ = new VariableList(); $$->push_back($<var_decl>1); }
           | func_decl_args TCOMMA var_decl { $1->push_back($<var_decl>3); }
           ;
-
-ident : T_IDENTIFIER { $$ = new NIdentifier(*$1); delete $1; }
-      ;
-
-type : T_TYPE { $$ = new NType(*$1); delete $1; }
-      ;
-
-numeric : T_VAL_INTEGER { $$ = new NInteger(atol($1->c_str())); delete $1; }
-        | T_VAL_DOUBLE { $$ = new NDouble(atof($1->c_str())); delete $1; }
-        ;
-
-boolean : T_VAL_BOOL { $$ = new NBool($1->c_str()); delete $1; }
-        ;
     
 expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); }
      | ident TLPAREN call_args TRPAREN TSC { $$ = new NMethodCall(*$1, *$3); delete $3; }
      | ident { $<ident>$ = $1; }
-     | TIF expr TTHEN expr TELSE expr { $$ = new NIfExpression(*$2, *$4, *$6); }
+     | TIF expr TLBRACE expr TRBRACE TELSE TLBRACE expr TRBRACE { $$ = new NIfExpression(*$2, *$4, *$8); }
      | numeric
      | boolean 
      | expr TPLUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
@@ -122,6 +112,16 @@ expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); }
      | expr TCGE expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
      | TLPAREN expr TRPAREN { $$ = $2; }
      ;
+
+ident : T_IDENTIFIER { $$ = new NIdentifier(*$1); delete $1; }
+      ;
+
+numeric : T_VAL_INTEGER { $$ = new NInteger(atol($1->c_str())); delete $1; }
+        | T_VAL_DOUBLE { $$ = new NDouble(atof($1->c_str())); delete $1; }
+        ;
+
+boolean : T_VAL_BOOL { $$ = new NBool($1->c_str()); delete $1; }
+        ;
     
 call_args : /*blank*/  { $$ = new ExpressionList(); }
           | expr { $$ = new ExpressionList(); $$->push_back($1); }
