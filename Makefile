@@ -12,5 +12,5 @@ parser.hpp: parser.cpp
 tokens.cpp: tokens.l parser.hpp
 	lex -o $@ $^
 
-command: parser.cpp codegen.cpp main.cpp tokens.cpp
+command: parser.cpp codegen.cpp codegen.h main.cpp tokens.cpp
 	g++ -o $@ `llvm-config --libs core jit native --cxxflags --ldflags` *.cpp -I$(LLVM)/include/ -w -L$(LLVM)/lib/ -lz -frtti

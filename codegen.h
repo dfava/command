@@ -1,4 +1,7 @@
-#include <stack>
+#ifndef __CODEGEN_H_
+#define __CODEGEN_H_
+#include <stack>  // TODO: Delete
+#include <list>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Type.h>
@@ -11,44 +14,76 @@
 #include <llvm/IR/Verifier.h>
 #include <llvm/IR/IRPrintingPasses.h>
 #include <llvm/IR/IRBuilder.h>
-//#include <llvm/ModuleProvider.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/Support/raw_ostream.h>
-//#include <llvm/TableGen/Error.h> // dsf
 
 using namespace llvm;
 
 class NBlock;
 
-// TODO:
-// Without branches, I believe it would be OK to have one
-// basic block per scope.  But this does not generalize:
-// If we had branches (if statements),
-// then a CodeGenBlock, which is essencially treated as a scope
-// should be implemented as a collection of BasicBlocks.
-class CodeGenBlock {
+class SymbolTable {
+private:
+  std::string name;
+  std::map<std::string, Value*> locals;
+
 public:
-    BasicBlock *block;
-    std::map<std::string, Value*> locals;
+  SymbolTable(std::string name) : name(name) { }
+  void Insert(std::string name, Value* value) { locals[name] = value; }
+  Value* LookUp(std::string name) {
+    if (locals.find(name) == locals.end()) {
+      return NULL;
+    }
+    return locals[name];
+  }
+};
+
+class Scope {
+private:
+  std::list<SymbolTable*> scope;
+
+public:
+  Scope() { }
+  int depth() { return scope.size();; }
+  void InitializeScope(std::string name) {
+    scope.push_front(new SymbolTable(name));
+  }
+  void FinalizeScope() {
+    SymbolTable* toDelete = scope.front();
+    scope.pop_front();
+    delete toDelete;
+  }
+  void Insert(std::string name, Value* value) { scope.front()->Insert(name, value); }
+  Value* LookUp(std::string name) {
+    for (std::list<SymbolTable*>::iterator it=scope.begin(); it != scope.end(); ++it)
+    {
+      Value* val = (*it)->LookUp(name);
+      if (val != NULL) return val;
+    }
+    return NULL;
+  }
 };
 
 class CodeGenContext {
-    std::stack<CodeGenBlock *> blocks;
-    Function *mainFunction;
-
 public:
-    Module *module;
-    CodeGenContext() { module = new Module("main", getGlobalContext()); }
-    
-    void generateCode(NBlock& root);
-    GenericValue runCode();
-    std::map<std::string, Value*>& locals() { return blocks.top()->locals; }
-    BasicBlock *currentBlock() { return blocks.top()->block; }
-    void pushBlock(BasicBlock *block) { blocks.push(new CodeGenBlock()); blocks.top()->block = block; }
-    void popBlock() { CodeGenBlock *top = blocks.top(); blocks.pop(); delete top; }
-    //Value *ErrorV(const char *Str) { Error(Str); return 0; } // dsf
+  Scope* scope; 
+  Module* module;
+  CodeGenContext(Scope* scope, Module* module) : scope(scope), module(module) { }
 };
 
+class CodeGen {
+private:
+  Function *mainFunction;
 
+public:
+  CodeGenContext* context;
+
+  CodeGen() { };
+  ~CodeGen() { delete context->scope; delete context->module; delete context; };
+  void init();
+  void generateCode(NBlock& root);
+  GenericValue runCode();
+  //Value *ErrorV(const char *Str) { Error(Str); return 0; } // dsf
+};
+#endif // __CODEGEN_H_

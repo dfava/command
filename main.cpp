@@ -47,9 +47,10 @@ int main(int argc, char **argv)
     }
     if (int ret = yyparse()) return ret;
     DPRNT("programBlock: %p\n", programBlock);
-    CodeGenContext context;
-    context.generateCode(*programBlock);
-    context.runCode();
+    CodeGen codegen;
+    codegen.init();
+    codegen.generateCode(*programBlock);
+    codegen.runCode();
     
     return 0;
 }
