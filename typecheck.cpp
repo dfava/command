@@ -109,6 +109,10 @@ Type* NBinaryOperator::typeCheck(Scope* scope)
 		case TMINUS:
 		case TMUL:
 		case TDIV:
+      if (tlhs == trhs && tlhs == Type::getInt64Ty(getGlobalContext()))
+        return Type::getInt64Ty(getGlobalContext());
+      else if (tlhs == trhs && tlhs == Type::getDoubleTy(getGlobalContext()))
+        return Type::getDoubleTy(getGlobalContext());
     case TCEQ:
     case TCNE:
     case TCLT:
@@ -116,12 +120,12 @@ Type* NBinaryOperator::typeCheck(Scope* scope)
     case TCGT:
     case TCGE :
       if (tlhs == trhs && tlhs == Type::getInt64Ty(getGlobalContext()))
-        return Type::getInt64Ty(getGlobalContext());
+        return Type::getInt1Ty(getGlobalContext());
       else if (tlhs == trhs && tlhs == Type::getDoubleTy(getGlobalContext()))
-        return Type::getDoubleTy(getGlobalContext());
+        return Type::getInt1Ty(getGlobalContext());
     default:
       std::cout << "Failed on NBinaryOperator" << std::endl;
-	    return NULL; // TODO: Type check
+	    return NULL;
       break;
 	}
 }
@@ -129,53 +133,25 @@ Type* NBinaryOperator::typeCheck(Scope* scope)
 Type* NIfExpression::typeCheck(Scope* scope)
 {
 	std::cout << "Type-checking if-then-else" << std::endl;
-  /*
-  // TODO: Must initialize a new scope for the two sides of the branches!
-  Value *CondV = iguard.typeCheck(scope);
-  if (CondV == 0) return 0;
-  
-  Function *TheFunction = Builder.GetInsertBlock()->getParent();
-  
-  // Create blocks for the then and else cases.  Insert the 'then' block at the
-  // end of the function.
-  BasicBlock *ThenBB = BasicBlock::Create(getGlobalContext(), "then", TheFunction);
-  BasicBlock *ElseBB = BasicBlock::Create(getGlobalContext(), "else");
-  BasicBlock *MergeBB = BasicBlock::Create(getGlobalContext(), "ifcont");
-  
-  Builder.CreateCondBr(CondV, ThenBB, ElseBB);
-  
-  // Emit then value.
-  Builder.SetInsertPoint(ThenBB);
-  
-  Value *ThenV = ithen.typeCheck(scope);
-  if (ThenV == 0) return 0;
-  
-  Builder.CreateBr(MergeBB);
-  // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
-  ThenBB = Builder.GetInsertBlock();
-  
-  // Emit else block.
-  TheFunction->getBasicBlockList().push_back(ElseBB);
-  Builder.SetInsertPoint(ElseBB);
-  
-  Value *ElseV = ielse.typeCheck(scope);
-  if (ElseV == 0) return 0;
-  
-  Builder.CreateBr(MergeBB);
-  // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
-  ElseBB = Builder.GetInsertBlock();
-  
-  // Emit merge block.
-  TheFunction->getBasicBlockList().push_back(MergeBB);
-  Builder.SetInsertPoint(MergeBB);
-  // TODO: Right now we only allow if-statements whose branches evaluate to doubles!
-  PHINode *PN = Builder.CreatePHI(Type::getDoubleTy(getGlobalContext()), 2, "iftmp");
-  
-  PN->addIncoming(ThenV, ThenBB);
-  PN->addIncoming(ElseV, ElseBB);
-  return PN;
-  */
-  return NULL;
+  Type* gtype = iguard.typeCheck(scope);
+  if (gtype != Type::getInt1Ty(getGlobalContext())) {
+    // TODO: Better error message
+    std::cout << "Failed on the guard" << std::endl;
+	  return NULL;
+  }
+  Type* ttype = ithen.typeCheck(scope);
+  if (ttype != Type::getVoidTy(getGlobalContext())) {
+    // TODO: Better error message
+    std::cout << "Failed on the then" << std::endl;
+	  return NULL;
+  }
+  Type* etype = ielse.typeCheck(scope);
+  if (etype != Type::getVoidTy(getGlobalContext())) {
+    // TODO: Better error message
+    std::cout << "Failed on the else" << std::endl;
+	  return NULL;
+  }
+  return Type::getVoidTy(getGlobalContext());
 }
 
 Type* NExpressionStatement::typeCheck(Scope* scope)
