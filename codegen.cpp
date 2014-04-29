@@ -162,7 +162,7 @@ math:
 		rhs.codeGen(scope), "", Builder.GetInsertBlock());
 }
 
-Value* NIfExpression::codeGen(Scope* scope)
+Value* NIfStatement::codeGen(Scope* scope)
 {
 	std::cout << "Generating code for if-then-else" << std::endl;
 

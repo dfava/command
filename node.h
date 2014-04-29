@@ -68,12 +68,12 @@ public:
     virtual llvm::Type* typeCheck(Scope* scope);
 };
 
-class NIfExpression : public NExpression {
+class NIfStatement : public NStatement {
 public:
     NExpression& iguard;
-    NExpression& ithen;
-    NExpression& ielse;
-    NIfExpression(NExpression& iguard, NExpression& ithen, NExpression& ielse) :
+    NStatement & ithen;
+    NStatement & ielse;
+    NIfStatement(NExpression& iguard, NStatement& ithen, NStatement& ielse) :
         iguard(iguard), ithen(ithen), ielse(ielse) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual llvm::Type* typeCheck(Scope* scope);

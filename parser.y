@@ -72,6 +72,7 @@ stmts : stmt { $$ = new NBlock(); $$->statements.push_back($<stmt>1); }
 
 stmt : var_decl | func_decl
      | expr { $$ = new NExpressionStatement(*$1); }
+     | TIF expr TLBRACE stmt TRBRACE TELSE TLBRACE stmt TRBRACE { $$ = new NIfStatement(*$2, *$4, *$8); }
      ;
 
 block : TLBRACE stmts TRBRACE { $$ = $2; }
@@ -97,7 +98,6 @@ func_decl_args : /*blank*/  { $$ = new VariableList(); }
 expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); }
      | ident TLPAREN call_args TRPAREN TSC { $$ = new NMethodCall(*$1, *$3); delete $3; }
      | ident { $<ident>$ = $1; }
-     | TIF expr TLBRACE expr TRBRACE TELSE TLBRACE expr TRBRACE { $$ = new NIfExpression(*$2, *$4, *$8); }
      | numeric
      | boolean 
      | expr TPLUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }

@@ -130,7 +130,7 @@ Type* NBinaryOperator::typeCheck(Scope* scope)
 	}
 }
 
-Type* NIfExpression::typeCheck(Scope* scope)
+Type* NIfStatement::typeCheck(Scope* scope)
 {
 	std::cout << "Type-checking if-then-else" << std::endl;
   Type* gtype = iguard.typeCheck(scope);
