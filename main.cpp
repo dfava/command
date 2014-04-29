@@ -2,8 +2,9 @@
 #include <stdio.h> // fopen
 #include <unistd.h> // getopt
 #include <libgen.h> // basename
-#include "codegen.h"
 #include "node.h"
+#include "codegen.h"
+#include "typecheck.h"
 
 #define DEBUG 1
 #define DPRNT(fmt, ...) do { if (DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
@@ -47,6 +48,13 @@ int main(int argc, char **argv)
     }
     if (int ret = yyparse()) return ret;
     DPRNT("programBlock: %p\n", programBlock);
+    if (true) {
+      TypeChecker typechecker;
+      if (!typechecker.check(*programBlock)) {
+        printf("Type checker failed\n");
+        return 1;
+      }
+    }
     CodeGen codegen;
     codegen.init();
     codegen.generateCode(*programBlock);

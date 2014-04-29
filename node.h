@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <llvm/IR/Value.h>
+#include <llvm/IR/Type.h>
 
 class CodeGenContext;
 class NStatement;
@@ -18,6 +19,7 @@ class Node {
 public:
     virtual ~Node() {}
     virtual llvm::Value* codeGen(Scope* scope) { }
+    virtual llvm::Type* typeCheck(Scope* scope) { }
 };
 
 class NExpression : public Node {
@@ -31,6 +33,7 @@ public:
     long long value;
     NInteger(long long value) : value(value) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NBool : public NExpression {
@@ -38,6 +41,7 @@ public:
     std::string value;
     NBool(std::string value) : value(value) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NDouble : public NExpression {
@@ -45,6 +49,7 @@ public:
     double value;
     NDouble(double value) : value(value) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NType : public NExpression {
@@ -52,6 +57,7 @@ public:
     std::string name;
     NType(const std::string& name) : name(name) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NIdentifier : public NExpression {
@@ -59,6 +65,7 @@ public:
     std::string name;
     NIdentifier(const std::string& name) : name(name) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NIfExpression : public NExpression {
@@ -69,6 +76,7 @@ public:
     NIfExpression(NExpression& iguard, NExpression& ithen, NExpression& ielse) :
         iguard(iguard), ithen(ithen), ielse(ielse) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NMethodCall : public NExpression {
@@ -79,6 +87,7 @@ public:
         id(id), arguments(arguments) { }
     NMethodCall(const NIdentifier& id) : id(id) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NBinaryOperator : public NExpression {
@@ -89,6 +98,7 @@ public:
     NBinaryOperator(NExpression& lhs, int op, NExpression& rhs) :
         lhs(lhs), rhs(rhs), op(op) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NAssignment : public NExpression {
@@ -98,6 +108,7 @@ public:
     NAssignment(NIdentifier& lhs, NExpression& rhs) : 
         lhs(lhs), rhs(rhs) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NBlock : public NExpression {
@@ -105,6 +116,7 @@ public:
     StatementList statements;
     NBlock() { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NExpressionStatement : public NStatement {
@@ -113,6 +125,7 @@ public:
     NExpressionStatement(NExpression& expression) : 
         expression(expression) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NVariableDeclaration : public NStatement {
@@ -125,6 +138,7 @@ public:
     NVariableDeclaration(const NType& type, NIdentifier& id, NExpression *assignmentExpr) :
         type(type), id(id), assignmentExpr(assignmentExpr) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 
 class NFunctionDeclaration : public NStatement {
@@ -137,5 +151,6 @@ public:
             const VariableList& arguments, NBlock& block) :
         type(type), id(id), arguments(arguments), block(block) { }
     virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
 };
 #endif // __NODE_H_
