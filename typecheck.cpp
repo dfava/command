@@ -15,26 +15,13 @@ bool TypeChecker::check(NBlock& root)
   // Create a global scope
   Scope* scope = new Scope();
   scope->InitializeScope("global");
-  root.typeCheck(scope);//context->scope);
+  Type* type = root.typeCheck(scope);//context->scope);
   assert(scope->depth() == 1);
   scope->FinalizeScope();
   delete scope;
-  return true; // TODO
-}
-
-/* Returns an LLVM type based on the identifier */
-static const Type *typeOf(const NType& type) 
-{
-	if (type.name.compare("int") == 0) {
-		return Type::getInt64Ty(getGlobalContext());
-	}
-	else if (type.name.compare("double") == 0) {
-		return Type::getDoubleTy(getGlobalContext());
-	}
-  else if (type.name.compare("bool") == 0) {
-		return Type::getInt1Ty(getGlobalContext());
-  }
-	return Type::getVoidTy(getGlobalContext());
+  if (type != Type::getVoidTy(getGlobalContext()))
+    return false;
+  return true;
 }
 
 Type* NInteger::typeCheck(Scope* scope)
@@ -57,7 +44,16 @@ Type* NBool::typeCheck(Scope* scope)
 
 Type* NType::typeCheck(Scope* scope)
 {
-  assert(0);
+	if (name.compare("int") == 0) {
+		return Type::getInt64Ty(getGlobalContext());
+	}
+	else if (name.compare("double") == 0) {
+		return Type::getDoubleTy(getGlobalContext());
+	}
+  else if (name.compare("bool") == 0) {
+		return Type::getInt1Ty(getGlobalContext());
+  }
+	return Type::getVoidTy(getGlobalContext());
 }
 
 Type* NIdentifier::typeCheck(Scope* scope)
@@ -67,9 +63,7 @@ Type* NIdentifier::typeCheck(Scope* scope)
 		std::cerr << "undeclared variable " << name << std::endl;
 		return NULL;
 	}
-  // TODO
-	//return scope->LookUp(name)->type;
-  return NULL;
+	return scope->LookUp(name)->type;
 }
 
 Type* NAssignment::typeCheck(Scope* scope)
@@ -79,50 +73,57 @@ Type* NAssignment::typeCheck(Scope* scope)
 		std::cerr << "undeclared variable " << lhs.name << std::endl;
 		return NULL;
 	}
-  return NULL;
-  // TODO
-  /* 
-  if (rhs.typeCheck(scope) == scope->LookUp(lhs.name)->type) {
-  	return Type::getVoidTy(getGlobalContext());
+  Type* dtype = scope->LookUp(lhs.name)->type;
+  Type* atype = rhs.typeCheck(scope);
+  if (dtype != atype) {
+    // TODO: Better error message
+    std::cout << "Failed" << std::endl;
+    return NULL;
   }
-  std::cout << "Failed" << std::endl;
-  */
+	return Type::getVoidTy(getGlobalContext());
 }
 
 Type* NVariableDeclaration::typeCheck(Scope* scope)
 {
 	std::cout << "Type-checking variable declaration " << type.name << " " << id.name << std::endl;
-  /*
-  scope->Insert(id.name, alloc);
+  Type* dtype = ((NType&) type).typeCheck(scope); // Drop the "const"
+  Symbol* sym = new Symbol(NULL, dtype);
+  scope->Insert(id.name, sym);
+  // Check that the assignment part
 	if (assignmentExpr != NULL) {
 		NAssignment assn(id, *assignmentExpr);
-		assn.typeCheck(scope);
+		Type* atype = assn.typeCheck(scope);
   }
-	return alloc;
-  */
-  return NULL;
+	return Type::getVoidTy(getGlobalContext());
 }
 
 Type* NBinaryOperator::typeCheck(Scope* scope)
 {
 	std::cout << "Type-checking binary operation " << op << std::endl;
-  /*
-	Instruction::BinaryOps instr;
-	switch (op) {
-		case TPLUS: 	instr = Instruction::Add; goto math;
-		case TMINUS: 	instr = Instruction::Sub; goto math;
-		case TMUL: 		instr = Instruction::Mul; goto math;
-		case TDIV: 		instr = Instruction::SDiv; goto math;
-				
-		// TODO comparison
-	}
 
-	return NULL;
-math:
-	return BinaryOperator::Create(instr, lhs.typeCheck(scope), 
-		rhs.typeCheck(scope), "", Builder.GetInsertBlock());
-  */
-  return NULL;
+  Type* tlhs = lhs.typeCheck(scope);
+	Type* trhs = rhs.typeCheck(scope);
+
+	switch (op) {
+		case TPLUS:
+		case TMINUS:
+		case TMUL:
+		case TDIV:
+    case TCEQ:
+    case TCNE:
+    case TCLT:
+    case TCLE:
+    case TCGT:
+    case TCGE :
+      if (tlhs == trhs && tlhs == Type::getInt64Ty(getGlobalContext()))
+        return Type::getInt64Ty(getGlobalContext());
+      else if (tlhs == trhs && tlhs == Type::getDoubleTy(getGlobalContext()))
+        return Type::getDoubleTy(getGlobalContext());
+    default:
+      std::cout << "Failed on NBinaryOperator" << std::endl;
+	    return NULL; // TODO: Type check
+      break;
+	}
 }
 
 Type* NIfExpression::typeCheck(Scope* scope)
@@ -189,8 +190,11 @@ Type* NBlock::typeCheck(Scope* scope)
 	Value *last = NULL;
 	for (it = statements.begin(); it != statements.end(); it++) {
 		std::cout << "Type-checking " << typeid(**it).name() << std::endl;
-    // TODO: Make sure each statement type is void
-		//last = (**it).typeCheck(scope);
+		Type* type = (**it).typeCheck(scope);
+    if (type != Type::getVoidTy(getGlobalContext())) {
+      std::cout << "Failed to typecheck to void" << std::endl;
+      return NULL;
+    }
 	}
 	std::cout << "Type-checking block" << std::endl;
 	return Type::getVoidTy(getGlobalContext());

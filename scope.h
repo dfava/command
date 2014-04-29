@@ -5,15 +5,27 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Type.h>
 
+class Symbol {
+public:
+  llvm::Value* value;
+  llvm::Type* type;
+  Symbol(llvm::Value* value, llvm::Type* type) : value(value), type(type) { }
+};
+
 class SymbolTable {
 private:
   std::string name;
-  std::map<std::string, llvm::Value*> locals;
+  std::map<std::string, Symbol*> locals;
 
 public:
   SymbolTable(std::string name) : name(name) { }
-  void Insert(std::string name, llvm::Value* value) { locals[name] = value; }
-  llvm::Value* LookUp(std::string name) {
+  ~SymbolTable() {
+    for (std::map<std::string, Symbol*>::iterator it=locals.begin(); it != locals.end(); ++it) {
+      delete it->second;
+    }
+  }
+  void Insert(std::string name, Symbol* sym) { locals[name] = sym; }
+  Symbol* LookUp(std::string name) {
     if (locals.find(name) == locals.end()) {
       return NULL;
     }
@@ -36,12 +48,12 @@ public:
     scope.pop_front();
     delete toDelete;
   }
-  void Insert(std::string name, llvm::Value* value) { scope.front()->Insert(name, value); }
-  llvm::Value* LookUp(std::string name) {
+  void Insert(std::string name, Symbol* sym) { scope.front()->Insert(name, sym); }
+  Symbol* LookUp(std::string name) {
     for (std::list<SymbolTable*>::iterator it=scope.begin(); it != scope.end(); ++it)
     {
-      llvm::Value* val = (*it)->LookUp(name);
-      if (val != NULL) return val;
+      Symbol* sym = (*it)->LookUp(name);
+      if (sym != NULL) return sym;
     }
     return NULL;
   }

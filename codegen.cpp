@@ -117,7 +117,7 @@ Value* NIdentifier::codeGen(Scope* scope)
 		std::cerr << "undeclared variable " << name << std::endl;
 		return NULL;
 	}
-	return new LoadInst(scope->LookUp(name), "", false, Builder.GetInsertBlock());
+	return new LoadInst(scope->LookUp(name)->value, "", false, Builder.GetInsertBlock());
 }
 
 Value* NAssignment::codeGen(Scope* scope)
@@ -127,14 +127,15 @@ Value* NAssignment::codeGen(Scope* scope)
 		std::cerr << "undeclared variable " << lhs.name << std::endl;
 		return NULL;
 	}
-	return new StoreInst(rhs.codeGen(scope), scope->LookUp(lhs.name), false, Builder.GetInsertBlock());
+	return new StoreInst(rhs.codeGen(scope), scope->LookUp(lhs.name)->value, false, Builder.GetInsertBlock());
 }
 
 Value* NVariableDeclaration::codeGen(Scope* scope)
 {
 	std::cout << "Creating variable declaration " << type.name << " " << id.name << std::endl;
 	AllocaInst *alloc = new AllocaInst( (llvm::Type *) typeOf(type), id.name.c_str(), Builder.GetInsertBlock());
-  scope->Insert(id.name, alloc);
+  Symbol* sym = new Symbol(alloc, NULL);
+  scope->Insert(id.name, sym);
 	if (assignmentExpr != NULL) {
 		NAssignment assn(id, *assignmentExpr);
 		assn.codeGen(scope);
