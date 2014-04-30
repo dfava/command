@@ -17,6 +17,7 @@ extern "C" int yywrap() { }
 "bool"                  SAVE_TOKEN; return T_TYPE;
 "true"                  SAVE_TOKEN; return T_VAL_BOOL;
 "false"                 SAVE_TOKEN; return T_VAL_BOOL;
+"high"                  SAVE_TOKEN; return T_SEC;
 "if"                    return TOKEN(TIF);
 "else"                  return TOKEN(TELSE);
 [a-zA-Z_][a-zA-Z0-9_]*  SAVE_TOKEN; return T_IDENTIFIER;

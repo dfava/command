@@ -42,6 +42,13 @@ Type* NBool::typeCheck(Scope* scope)
   return Type::getInt1Ty(getGlobalContext());
 }
 
+Type* NSecurity::typeCheck(Scope* scope)
+{
+  // TODO
+	std::cout << "Type-checking security: " << name << std::endl;
+  return NULL;
+}
+
 Type* NType::typeCheck(Scope* scope)
 {
 	if (name.compare("int") == 0) {

@@ -110,6 +110,11 @@ Value* NType::codeGen(Scope* scope)
   assert(0);
 }
 
+Value* NSecurity::codeGen(Scope* scope)
+{
+  assert(0);
+}
+
 Value* NIdentifier::codeGen(Scope* scope)
 {
 	std::cout << "Creating identifier reference: " << name << std::endl;

@@ -60,6 +60,14 @@ public:
     virtual llvm::Type* typeCheck(Scope* scope);
 };
 
+class NSecurity : public NExpression {
+public:
+    std::string name;
+    NSecurity(const std::string& name) : name(name) { }
+    virtual llvm::Value* codeGen(Scope* scope);
+    virtual llvm::Type* typeCheck(Scope* scope);
+};
+
 class NIdentifier : public NExpression {
 public:
     std::string name;
@@ -131,12 +139,13 @@ public:
 class NVariableDeclaration : public NStatement {
 public:
     const NType& type;
+    NSecurity& security;
     NIdentifier& id;
     NExpression *assignmentExpr;
-    NVariableDeclaration(const NType& type, NIdentifier& id) :
-        type(type), id(id) { }
-    NVariableDeclaration(const NType& type, NIdentifier& id, NExpression *assignmentExpr) :
-        type(type), id(id), assignmentExpr(assignmentExpr) { }
+    NVariableDeclaration(const NType& type, NIdentifier& id, NSecurity& sec) :
+        type(type), id(id), security(sec) { }
+    NVariableDeclaration(const NType& type, NIdentifier& id, NExpression *assignmentExpr, NSecurity& sec) :
+        type(type), id(id), assignmentExpr(assignmentExpr), security(sec) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual llvm::Type* typeCheck(Scope* scope);
 };

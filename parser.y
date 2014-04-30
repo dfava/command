@@ -21,6 +21,7 @@
     NStatement *stmt;
     NIdentifier *ident;
     NType *type;
+    NSecurity *sec;
     NVariableDeclaration *var_decl;
     std::vector<NVariableDeclaration*> *varvec;
     std::vector<NExpression*> *exprvec;
@@ -32,7 +33,7 @@
    match our tokens.l lex file. We also define the node type
    they represent.
  */
-%token <string> T_TYPE T_IDENTIFIER T_VAL_INTEGER T_VAL_DOUBLE T_VAL_BOOL
+%token <string> T_TYPE T_SEC T_IDENTIFIER T_VAL_INTEGER T_VAL_DOUBLE T_VAL_BOOL
 %token <token> TCEQ TCNE TCLT TCLE TCGT TCGE TEQUAL
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TCOMMA TDOT
 %token <token> TPLUS TMINUS TMUL TDIV TSC
@@ -44,6 +45,7 @@
    calling an (NIdentifier*). It makes the compiler happy.
  */
 %type <type> type
+%type <sec> sec
 %type <ident> ident
 %type <expr> numeric boolean expr 
 %type <varvec> func_decl_args
@@ -79,8 +81,10 @@ block : TLBRACE stmts TRBRACE { $$ = $2; }
       | TLBRACE TRBRACE { $$ = new NBlock(); }
       ;
 
-var_decl : type ident TSC { $$ = new NVariableDeclaration(*$1, *$2); }
-         | type ident TEQUAL expr TSC{ $$ = new NVariableDeclaration(*$1, *$2, $4); }
+var_decl : type ident TSC { $$ = new NVariableDeclaration(*$1, *$2, *(new NSecurity(""))); }
+         | type ident TEQUAL expr TSC{ $$ = new NVariableDeclaration(*$1, *$2, $4, *(new NSecurity(""))); }
+         | sec type ident TSC { $$ = new NVariableDeclaration(*$2, *$3, *$1); }
+         | sec type ident TEQUAL expr TSC{ $$ = new NVariableDeclaration(*$2, *$3, $5, *$1); }
          ;
 
 func_decl : type ident TLPAREN func_decl_args TRPAREN block 
@@ -88,7 +92,10 @@ func_decl : type ident TLPAREN func_decl_args TRPAREN block
           ;
     
 type : T_TYPE { $$ = new NType(*$1); delete $1; }
-      ;
+     ;
+
+sec : T_SEC { $$ = new NSecurity(*$1); delete $1; }
+    ;
  
 func_decl_args : /*blank*/  { $$ = new VariableList(); }
           | var_decl { $$ = new VariableList(); $$->push_back($<var_decl>1); }
