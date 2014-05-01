@@ -74,11 +74,11 @@ stmts : stmt { $$ = new NBlock(); $$->statements.push_back($<stmt>1); }
 
 stmt : var_decl | func_decl
      | expr { $$ = new NExpressionStatement(*$1); }
-     | TIF expr TLBRACE stmt TRBRACE TELSE TLBRACE stmt TRBRACE { $$ = new NIfStatement(*$2, *$4, *$8); }
      ;
 
-block : TLBRACE stmts TRBRACE { $$ = $2; }
-      | TLBRACE TRBRACE { $$ = new NBlock(); }
+block : /*blank*/ { $$ = new NBlock(); }
+      | block var_decl { $$->statements.push_back($<stmt>2); }
+      | block expr { $$->statements.push_back($<stmt>2); }
       ;
 
 var_decl : type ident TSC { $$ = new NVariableDeclaration(*$1, *$2, *(new NSecurity(""))); }
@@ -87,8 +87,8 @@ var_decl : type ident TSC { $$ = new NVariableDeclaration(*$1, *$2, *(new NSecur
          | sec type ident TEQUAL expr TSC{ $$ = new NVariableDeclaration(*$2, *$3, $5, *$1); }
          ;
 
-func_decl : type ident TLPAREN func_decl_args TRPAREN block 
-            { $$ = new NFunctionDeclaration(*$1, *$2, *$4, *$6); delete $4; }
+func_decl : type ident TLPAREN func_decl_args TRPAREN TLBRACE block TRBRACE
+            { $$ = new NFunctionDeclaration(*$1, *$2, *$4, *$7); delete $4; }
           ;
     
 type : T_TYPE { $$ = new NType(*$1); delete $1; }
@@ -105,6 +105,7 @@ func_decl_args : /*blank*/  { $$ = new VariableList(); }
 expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); }
      | ident TLPAREN call_args TRPAREN TSC { $$ = new NMethodCall(*$1, *$3); delete $3; }
      | ident { $<ident>$ = $1; }
+     | TIF expr TLBRACE block TRBRACE TELSE TLBRACE block TRBRACE { $$ = new NIfExpression(*$2, *$4, *$8); }
      | numeric
      | boolean 
      | expr TPLUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
