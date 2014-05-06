@@ -171,9 +171,8 @@ Value* NIfExpression::codeGen(Scope* scope)
 {
 	std::cout << "Generating code for if-then-else" << std::endl;
 
-  // TODO: Must initialize a new scope for the two sides of the branches!
   Value *CondV = iguard.codeGen(scope);
-  if (CondV == 0) return 0;
+  if (CondV == NULL) return NULL;
   
   Function *TheFunction = Builder.GetInsertBlock()->getParent();
   
@@ -188,8 +187,11 @@ Value* NIfExpression::codeGen(Scope* scope)
   // Emit then value.
   Builder.SetInsertPoint(ThenBB);
   
+  scope->InitializeScope("branch", "");
   Value *ThenV = ithen.codeGen(scope);
-  if (ThenV == 0) return 0;
+  scope->FinalizeScope();
+  std::cout << "ThenV: " << ThenV << std::endl;
+  if (ThenV == NULL) return NULL;
   
   Builder.CreateBr(MergeBB);
   // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
@@ -199,8 +201,11 @@ Value* NIfExpression::codeGen(Scope* scope)
   TheFunction->getBasicBlockList().push_back(ElseBB);
   Builder.SetInsertPoint(ElseBB);
   
+  scope->InitializeScope("branch", "");
   Value *ElseV = ielse.codeGen(scope);
-  if (ElseV == 0) return 0;
+  scope->FinalizeScope();
+  std::cout << "ElseV: " << ThenV << std::endl;
+  if (ElseV == NULL) return NULL;
   
   Builder.CreateBr(MergeBB);
   // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
@@ -209,8 +214,8 @@ Value* NIfExpression::codeGen(Scope* scope)
   // Emit merge block.
   TheFunction->getBasicBlockList().push_back(MergeBB);
   Builder.SetInsertPoint(MergeBB);
-  // TODO: Right now we only allow if-statements whose branches evaluate to doubles!
-  PHINode *PN = Builder.CreatePHI(Type::getDoubleTy(getGlobalContext()), 2, "iftmp");
+  // TODO
+  PHINode *PN = Builder.CreatePHI(Type::getVoidTy(getGlobalContext()), 2, "iftmp");
   
   PN->addIncoming(ThenV, ThenBB);
   PN->addIncoming(ElseV, ElseBB);
@@ -231,6 +236,16 @@ Value* NBlock::codeGen(Scope* scope)
 		std::cout << "Generating code for " << typeid(**it).name() << std::endl;
 		last = (**it).codeGen(scope);
 	}
+  // Since we are using NULL for error conditions,
+  // And since a block can be empty,
+  // Then we need to distinguish the NULL for error condition
+  // from the NULL for an empty block
+  // Therefore, for empty blocks we return nop instead
+	if (statements.begin() == statements.end()) {
+    return new BitCastInst(Constant::getNullValue(
+        Type::getInt1Ty(getGlobalContext())), 
+        Type::getInt1Ty(getGlobalContext()), "", Builder.GetInsertBlock());
+  }
 	std::cout << "Creating block" << std::endl;
 	return last;
 }
