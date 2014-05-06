@@ -45,6 +45,7 @@ SType* NBool::typeCheck(Scope* scope)
 SType* NSecurity::typeCheck(Scope* scope)
 {
 	std::cout << "Type-checking security: " << name << std::endl;
+  if (name == "") name = "low";
   return new SType(NULL, name);
 }
 
@@ -89,7 +90,10 @@ SType* NAssignment::typeCheck(Scope* scope)
     std::cout << "Failed on types" << std::endl;
     return NULL;
   }
-  if (dtype->sec != atype->sec) {
+  // If the right hand side expression doesn't have a type,
+  // its because it doesn't operate on variables.
+  // In this case, its safe to allow this to proceed.
+  if (dtype->sec == "low" && atype->sec == "high") {
     // TODO: Better error message
     std::cout << "Failed on security (explicit flow)" << std::endl;
     return NULL;
@@ -100,6 +104,11 @@ SType* NAssignment::typeCheck(Scope* scope)
 SType* NVariableDeclaration::typeCheck(Scope* scope)
 {
 	std::cout << "Type-checking variable declaration " << type.name << " " << id.name << std::endl;
+  Symbol* sym = scope->LookUp(id.name);
+  if (sym != NULL) {
+    std::cout << "Variable redeclaration" << std::endl;
+    return NULL;
+  }
   SType* tmp;
   tmp = ((NType&) type).typeCheck(scope);
   if (tmp == NULL) return NULL;
@@ -109,7 +118,7 @@ SType* NVariableDeclaration::typeCheck(Scope* scope)
   if (tmp == NULL) return NULL;
   std::string sec = tmp->sec;
   delete tmp;
-  Symbol* sym = new Symbol(NULL, new SType(dtype, sec));
+  sym = new Symbol(NULL, new SType(dtype, sec));
   scope->Insert(id.name, sym);
   // Check that the assignment part
 	if (assignmentExpr != NULL) {
