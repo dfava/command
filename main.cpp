@@ -22,14 +22,25 @@ void usage(int argc, char** argv) {
 
 int main(int argc, char **argv)
 {
+    bool typechecking = true;
     char* file = NULL;
     int c;
     opterr = 0;
-    while ((c = getopt (argc, argv, "f:h")) != -1)
+    while ((c = getopt (argc, argv, "f:ht:")) != -1)
        switch (c)
        {
        case 'f':
          file = optarg;
+         break;
+       case 't':
+         if (strncmp(optarg, "0", 1)==0) {
+           typechecking = false;
+         } else if (strncmp(optarg, "1", 1)==0) {
+           typechecking = true;
+         } else {
+           fprintf(stderr, "ERR: Options to -t are either 0 for no type checking or 1 for type checking\n" );
+           return 1;
+         }
          break;
        case 'h':
          usage(argc, argv);
@@ -48,7 +59,7 @@ int main(int argc, char **argv)
     }
     if (int ret = yyparse()) return ret;
     DPRNT("programBlock: %p\n", programBlock);
-    if (true) {
+    if (typechecking) {
       TypeChecker typechecker;
       if (!typechecker.check(*programBlock)) {
         printf("Type checker failed\n");
