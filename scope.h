@@ -46,17 +46,20 @@ public:
 class Scope {
 private:
   std::list<SymbolTable*> scope;
+  std::list<std::string> security_context;
 
 public:
   Scope() { }
   int depth() { return scope.size(); }
-  void InitializeScope(std::string name) {
+  void InitializeScope(std::string name = "", std::string sec = "") {
     scope.push_front(new SymbolTable(name));
+    security_context.push_front(sec);
   }
   void FinalizeScope() {
     SymbolTable* toDelete = scope.front();
     scope.pop_front();
     delete toDelete;
+    security_context.pop_front();
   }
   void Insert(std::string name, Symbol* sym) { scope.front()->Insert(name, sym); }
   Symbol* LookUp(std::string name) {
@@ -66,6 +69,9 @@ public:
       if (sym != NULL) return sym;
     }
     return NULL;
+  }
+  std::string getSecurityContext() {
+    return security_context.front();
   }
 };
 #endif // __SCOPE_H_

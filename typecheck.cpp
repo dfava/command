@@ -85,6 +85,11 @@ SType* NAssignment::typeCheck(Scope* scope)
   SType* dtype = sym->stype;
   SType* atype = rhs.typeCheck(scope);
   if (dtype == NULL || atype == NULL) return NULL;
+  // Check if the scope allow us to write to a low variable
+  if (dtype->sec == "low" && scope->getSecurityContext() == "high") {
+    std::cout << "Failed when trying to assign to a low var from a high context (implicit flow)" << std::endl;
+    return NULL;
+  }
   if (dtype->type != atype->type) {
     // TODO: Better error message
     std::cout << "Failed on types" << std::endl;
@@ -136,6 +141,10 @@ SType* NBinaryOperator::typeCheck(Scope* scope)
   SType* tlhs = lhs.typeCheck(scope);
 	SType* trhs = rhs.typeCheck(scope);
   if (tlhs == NULL || trhs == NULL) return NULL;
+  std::string sec = "";
+  if (tlhs->sec == "high" || trhs->sec == "high") {
+    sec = "high";
+  }
 
 	switch (op) {
 		case TPLUS:
@@ -143,9 +152,9 @@ SType* NBinaryOperator::typeCheck(Scope* scope)
 		case TMUL:
 		case TDIV:
       if (tlhs->type == trhs->type && tlhs->type == Type::getInt64Ty(getGlobalContext()))
-        return new SType(Type::getInt64Ty(getGlobalContext()), "");
+        return new SType(Type::getInt64Ty(getGlobalContext()), sec);
       else if (tlhs->type == trhs->type && tlhs->type == Type::getDoubleTy(getGlobalContext()))
-        return new SType(Type::getDoubleTy(getGlobalContext()), "");
+        return new SType(Type::getDoubleTy(getGlobalContext()), sec);
     case TCEQ:
     case TCNE:
     case TCLT:
@@ -153,9 +162,9 @@ SType* NBinaryOperator::typeCheck(Scope* scope)
     case TCGT:
     case TCGE :
       if (tlhs->type == trhs->type && tlhs->type == Type::getInt64Ty(getGlobalContext()))
-        return new SType(Type::getInt1Ty(getGlobalContext()), "");
+        return new SType(Type::getInt1Ty(getGlobalContext()), sec);
       else if (tlhs->type == trhs->type && tlhs->type == Type::getDoubleTy(getGlobalContext()))
-        return new SType(Type::getInt1Ty(getGlobalContext()), "");
+        return new SType(Type::getInt1Ty(getGlobalContext()), sec);
     default:
       std::cout << "Failed on NBinaryOperator" << std::endl;
 	    return NULL;
@@ -173,20 +182,36 @@ SType* NIfExpression::typeCheck(Scope* scope)
     std::cout << "Failed on the guard" << std::endl;
 	  return NULL;
   }
+
+  std::cout << "(Branch) Creating a new scope of security type: " << gtype->sec << std::endl;
+  scope->InitializeScope("branch", gtype->sec); // Create a new scope for this branch
   SType* ttype = ithen.typeCheck(scope);
-  if (ttype == NULL) return NULL;
+  if (ttype == NULL) {
+    scope->FinalizeScope();
+    return NULL;
+  }
   if (ttype->type != Type::getVoidTy(getGlobalContext())) {
     // TODO: Better error message
     std::cout << "Failed on the then" << std::endl;
+    scope->FinalizeScope();
 	  return NULL;
   }
+  scope->FinalizeScope();
+
+  scope->InitializeScope("branch", gtype->sec); // Create a new scope for this branch
   SType* etype = ielse.typeCheck(scope);
-  if (etype == NULL) return NULL;
+  if (etype == NULL) {
+    scope->FinalizeScope();
+    return NULL;
+  }
   if (etype->type != Type::getVoidTy(getGlobalContext())) {
     // TODO: Better error message
     std::cout << "Failed on the else" << std::endl;
+    scope->FinalizeScope();
 	  return NULL;
   }
+  scope->FinalizeScope();
+
   return new SType(Type::getVoidTy(getGlobalContext()), "");
 }
 
