@@ -5,11 +5,21 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Type.h>
 
+class SType {
+public:
+  llvm::Type* type;
+  std::string sec;
+  SType(llvm::Type* type, std::string sec) : type(type), sec(sec) { }
+  SType() : type(NULL), sec("") { }
+};
+
 class Symbol {
 public:
   llvm::Value* value;
-  llvm::Type* type;
-  Symbol(llvm::Value* value, llvm::Type* type) : value(value), type(type) { }
+  //llvm::Type* type;
+  SType* stype;
+  //Symbol(llvm::Value* value, llvm::Type* type) : value(value), type(type) { }
+  Symbol(llvm::Value* value, SType* stype) : value(value), stype(stype) { }
 };
 
 class SymbolTable {

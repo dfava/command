@@ -139,7 +139,7 @@ Value* NVariableDeclaration::codeGen(Scope* scope)
 {
 	std::cout << "Creating variable declaration " << type.name << " " << id.name << std::endl;
 	AllocaInst *alloc = new AllocaInst( (llvm::Type *) typeOf(type), id.name.c_str(), Builder.GetInsertBlock());
-  Symbol* sym = new Symbol(alloc, NULL);
+  Symbol* sym = new Symbol(alloc, new SType());
   scope->Insert(id.name, sym);
 	if (assignmentExpr != NULL) {
 		NAssignment assn(id, *assignmentExpr);
