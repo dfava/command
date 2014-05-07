@@ -184,7 +184,7 @@ SType* NIfExpression::typeCheck(Scope* scope)
   }
 
   std::cout << "(Branch) Creating a new scope of security type: " << gtype->sec << std::endl;
-  scope->InitializeScope("branch", gtype->sec); // Create a new scope for this branch
+  scope->InitializeScope("branch", (scope->getSecurityContext() == "high" ? "high" : gtype->sec)); // Create a new scope for this branch
   SType* ttype = ithen.typeCheck(scope);
   if (ttype == NULL) {
     scope->FinalizeScope();
@@ -198,7 +198,7 @@ SType* NIfExpression::typeCheck(Scope* scope)
   }
   scope->FinalizeScope();
 
-  scope->InitializeScope("branch", gtype->sec); // Create a new scope for this branch
+  scope->InitializeScope("branch", (scope->getSecurityContext() == "high" ? "high" : gtype->sec)); // Create a new scope for this branch
   SType* etype = ielse.typeCheck(scope);
   if (etype == NULL) {
     scope->FinalizeScope();
