@@ -18,19 +18,34 @@ extern NBlock* programBlock;
 void usage(int argc, char** argv) {
     printf("%s:\n", basename(argv[0]));
     printf("  A compiler for the command language.\n");
+    printf("    -f [fname] : Input file.\n");
+    printf("    -g [0,1]   : Turn code generation off (0) or on (1). Defaults to on.\n");
+    printf("    -h         : Print usage.\n");
+    printf("    -t [0,1]   : Turn type checking off (0) or on (1). Defaults to on.\n");
 }
 
 int main(int argc, char **argv)
 {
     bool typechecking = true;
+    bool codegen = true;
     char* file = NULL;
     int c;
     opterr = 0;
-    while ((c = getopt (argc, argv, "f:ht:")) != -1)
+    while ((c = getopt (argc, argv, "f:g:ht:")) != -1)
        switch (c)
        {
        case 'f':
          file = optarg;
+         break;
+       case 'g':
+         if (strncmp(optarg, "0", 1)==0) {
+           codegen = false;
+         } else if (strncmp(optarg, "1", 1)==0) {
+           codegen = true;
+         } else {
+           fprintf(stderr, "ERR: Options to -g are either 0 for no codegen or 1 for codegen\n" );
+           return 1;
+         }
          break;
        case 't':
          if (strncmp(optarg, "0", 1)==0) {
@@ -46,7 +61,9 @@ int main(int argc, char **argv)
          usage(argc, argv);
          return 1;
        default:
-         abort();
+         fprintf(stderr, "Invalid command line options\n\n" );
+         usage(argc, argv);
+         return 1;
        }
     if (file != NULL) {
       FILE* fhandle = fopen(file, "r");
@@ -66,10 +83,12 @@ int main(int argc, char **argv)
         return 1;
       }
     }
-    CodeGen codegen;
-    codegen.init();
-    codegen.generateCode(*programBlock);
-    codegen.runCode();
+    if (codegen) {
+      CodeGen codegen;
+      codegen.init();
+      codegen.generateCode(*programBlock);
+      codegen.runCode();
+    }
     
     return 0;
 }
