@@ -16,6 +16,7 @@ extern FILE* yyin;
 extern NBlock* programBlock;
 
 TypeChecker typechecker;
+CodeGen codegen;
 
 void usage(int argc, char** argv) {
     printf("%s:\n", basename(argv[0]));
@@ -24,16 +25,18 @@ void usage(int argc, char** argv) {
     printf("    -g [0,1]   : Turn code generation off (0) or on (1). Defaults to on.\n");
     printf("    -h         : Print usage.\n");
     printf("    -t [0,1]   : Turn type checking off (0) or on (1). Defaults to on.\n");
+    printf("    -v [0,1]   : Turn verbosity off (0) or on (1). Defaults to off.\n");
 }
 
 int main(int argc, char **argv)
 {
     bool typechecking = true;
-    bool codegen = true;
+    bool geningcode = true;
+    bool verbose = false;
     char* filename = NULL;
     int c;
     opterr = 0;
-    while ((c = getopt (argc, argv, "f:g:ht:")) != -1)
+    while ((c = getopt (argc, argv, "f:g:ht:v:")) != -1)
        switch (c)
        {
        case 'f':
@@ -41,9 +44,9 @@ int main(int argc, char **argv)
          break;
        case 'g':
          if (strncmp(optarg, "0", 1)==0) {
-           codegen = false;
+           geningcode = false;
          } else if (strncmp(optarg, "1", 1)==0) {
-           codegen = true;
+           geningcode = true;
          } else {
            fprintf(stderr, "ERR: Options to -g are either 0 for no codegen or 1 for codegen\n" );
            return 1;
@@ -62,6 +65,16 @@ int main(int argc, char **argv)
        case 'h':
          usage(argc, argv);
          return 1;
+       case 'v':
+         if (strncmp(optarg, "0", 1)==0) {
+           verbose = false;
+         } else if (strncmp(optarg, "1", 1)==0) {
+           verbose = true;
+         } else {
+           fprintf(stderr, "ERR: Options to -v are either 0 for low verbosity or 1 for higher verbosity\n" );
+           return 1;
+         }
+         break;
        default:
          fprintf(stderr, "Invalid command line options\n\n" );
          usage(argc, argv);
@@ -79,15 +92,16 @@ int main(int argc, char **argv)
     if (int ret = yyparse()) return ret;
     DPRNT("programBlock: %p\n", programBlock);
     if (typechecking) {
+      typechecker.setVerbose(verbose);
       if (filename != NULL) typechecker.setFileName(filename); // For printing error messages
       if (!typechecker.check(*programBlock)) {
         printf("Type checker failed\n");
         return 1;
       }
     }
-    if (codegen) {
-      CodeGen codegen;
+    if (geningcode) {
       codegen.init();
+      codegen.setVerbose(verbose);
       codegen.generateCode(*programBlock);
       codegen.runCode();
     }

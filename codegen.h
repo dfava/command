@@ -15,16 +15,23 @@ public:
 
 class CodeGen {
 private:
+  bool verbose = false;
   llvm::Function *mainFunction;
 
 public:
   CodeGenContext* context;
-
   CodeGen() { };
-  ~CodeGen() { delete context->scope; delete context->module; delete context; };
+  ~CodeGen() {
+    if (context != NULL) {
+      if (context->scope != NULL) delete context->scope;
+      if (context->module != NULL) delete context->module;
+      delete context;
+    }
+  };
   void init();
   void generateCode(NBlock& root);
   llvm::GenericValue runCode();
-  //llvm::Value *ErrorV(const char *Str) { Error(Str); return 0; } // dsf
+  void setVerbose(bool v) { verbose = v; };
+  bool getVerbose() { return verbose; };
 };
 #endif // __CODEGEN_H_

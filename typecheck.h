@@ -13,7 +13,7 @@ public:
   bool check(NBlock& root);
   void setFileName(char* filename);
   void printErrorMessage(std::string message, int lineno);
-  void setVerbose() { verbose = true; };
+  void setVerbose(bool v) { verbose = v; };
   bool getVerbose() { return verbose; };
 };
 #endif // __TYPECHECKER_H_
