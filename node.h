@@ -17,6 +17,7 @@ typedef std::vector<NVariableDeclaration*> VariableList;
 
 class Node {
 public:
+    int lineno;
     virtual ~Node() {}
     virtual llvm::Value* codeGen(Scope* scope) { }
     virtual SType* typeCheck(Scope* scope) { }

@@ -6,7 +6,7 @@
 #include "codegen.h"
 #include "typecheck.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define DPRNT(fmt, ...) do { if (DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
 
 using namespace std;
@@ -14,6 +14,8 @@ using namespace std;
 extern int yyparse();
 extern FILE* yyin;
 extern NBlock* programBlock;
+
+TypeChecker typechecker;
 
 void usage(int argc, char** argv) {
     printf("%s:\n", basename(argv[0]));
@@ -28,14 +30,14 @@ int main(int argc, char **argv)
 {
     bool typechecking = true;
     bool codegen = true;
-    char* file = NULL;
+    char* filename = NULL;
     int c;
     opterr = 0;
     while ((c = getopt (argc, argv, "f:g:ht:")) != -1)
        switch (c)
        {
        case 'f':
-         file = optarg;
+         filename = optarg;
          break;
        case 'g':
          if (strncmp(optarg, "0", 1)==0) {
@@ -65,19 +67,19 @@ int main(int argc, char **argv)
          usage(argc, argv);
          return 1;
        }
-    if (file != NULL) {
-      FILE* fhandle = fopen(file, "r");
+    if (filename != NULL) {
+      FILE* fhandle = fopen(filename, "r");
       if (fhandle == NULL) {
-        fprintf(stderr, "ERR: Could not open file %s\n", file);
+        fprintf(stderr, "ERR: Could not open file %s\n", filename);
         return 1;
       }
-      printf( "%s\n", file);
+      DPRNT( "%s\n", filename);
       yyin = fhandle;
     }
     if (int ret = yyparse()) return ret;
     DPRNT("programBlock: %p\n", programBlock);
     if (typechecking) {
-      TypeChecker typechecker;
+      if (filename != NULL) typechecker.setFileName(filename); // For printing error messages
       if (!typechecker.check(*programBlock)) {
         printf("Type checker failed\n");
         return 1;

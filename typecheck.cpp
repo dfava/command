@@ -5,13 +5,47 @@
 #include <llvm/IR/Type.h>
 #include <llvm/IR/LLVMContext.h>
 
+#include <map>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+
 using namespace llvm;
 using namespace std;
+
+extern TypeChecker typechecker;
+
+void TypeChecker::setFileName(char* filename)
+{
+  this->filename = filename;
+  std::ifstream input(filename);
+  int lineno = 0;
+  for(std::string line; getline(input, line);) {
+    fmap[++lineno] = line;
+    if (verbose) std::cout << line << std::endl;
+  }
+}
+
+void TypeChecker::printErrorMessage(std::string message, int lineno)
+{
+  std::cerr << "ERR: " << message << std::endl;
+  if (filename != NULL) {
+    std::cerr << filename;
+    if (lineno > 0) {
+      std::cerr << " line " << lineno << ": " << endl << fmap[lineno] << std::endl;
+    } else {
+      std::cerr << std::endl;
+    }
+  }
+}
 
 /* Compile the AST into a module */
 bool TypeChecker::check(NBlock& root)
 {
-	std::cout << "Type-checking code...\n";
+  if (verbose) {
+    std::cout << "Type-checking code...\n";
+  }
   // Create a global scope
   Scope* scope = new Scope();
   scope->InitializeScope("global");
@@ -26,25 +60,25 @@ bool TypeChecker::check(NBlock& root)
 
 SType* NInteger::typeCheck(Scope* scope)
 {
-	std::cout << "Type-checking integer: " << value << std::endl;
+  if (typechecker.getVerbose()) std::cout << "Type-checking integer: " << value << std::endl;
 	return new SType(Type::getInt64Ty(getGlobalContext()), "");
 }
 
 SType* NDouble::typeCheck(Scope* scope)
 {
-	std::cout << "Type-checking double: " << value << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking double: " << value << std::endl;
 	return new SType(Type::getDoubleTy(getGlobalContext()), "");
 }
 
 SType* NBool::typeCheck(Scope* scope)
 {
-	std::cout << "Type-checking boolean: " << value << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking boolean: " << value << std::endl;
   return new SType(Type::getInt1Ty(getGlobalContext()), "");
 }
 
 SType* NSecurity::typeCheck(Scope* scope)
 {
-	std::cout << "Type-checking security: " << name << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking security: " << name << std::endl;
   if (name == "") name = "low";
   return new SType(NULL, name);
 }
@@ -65,10 +99,10 @@ SType* NType::typeCheck(Scope* scope)
 
 SType* NIdentifier::typeCheck(Scope* scope)
 {
-	std::cout << "Type-checking identifier reference: " << name << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking identifier reference: " << name << std::endl;
   Symbol* sym = scope->LookUp(name);
 	if (sym == NULL) {
-		std::cerr << "undeclared variable " << name << std::endl;
+    typechecker.printErrorMessage("Undeclared variable " + name, lineno);
 		return NULL;
 	}
 	return sym->stype;
@@ -76,10 +110,10 @@ SType* NIdentifier::typeCheck(Scope* scope)
 
 SType* NAssignment::typeCheck(Scope* scope)
 {
-	std::cout << "Type-checking assignment " << lhs.name << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking assignment " << lhs.name << std::endl;
   Symbol* sym = scope->LookUp(lhs.name);
 	if (sym == NULL) {
-		std::cerr << "undeclared variable " << lhs.name << std::endl;
+    typechecker.printErrorMessage("Undeclared variable " + lhs.name, lineno);
 		return NULL;
 	}
   SType* dtype = sym->stype;
@@ -87,20 +121,18 @@ SType* NAssignment::typeCheck(Scope* scope)
   if (dtype == NULL || atype == NULL) return NULL;
   // Check if the scope allow us to write to a low variable
   if (dtype->sec == "low" && scope->getSecurityContext() == "high") {
-    std::cout << "Failed when trying to assign to a low var from a high context (implicit flow)" << std::endl;
+    typechecker.printErrorMessage("Failed when trying to assign to a low var from a high context (implicit flow)", lineno);
     return NULL;
   }
   if (dtype->type != atype->type) {
-    // TODO: Better error message
-    std::cout << "Failed on types" << std::endl;
+    typechecker.printErrorMessage("Failed on types", lineno);
     return NULL;
   }
   // If the right hand side expression doesn't have a type,
   // its because it doesn't operate on variables.
   // In this case, its safe to allow this to proceed.
   if (dtype->sec == "low" && atype->sec == "high") {
-    // TODO: Better error message
-    std::cout << "Failed on security (explicit flow)" << std::endl;
+    typechecker.printErrorMessage("Failed on security (explicit flow)", lineno);
     return NULL;
   }
 	return new SType(Type::getVoidTy(getGlobalContext()), "");
@@ -108,10 +140,10 @@ SType* NAssignment::typeCheck(Scope* scope)
 
 SType* NVariableDeclaration::typeCheck(Scope* scope)
 {
-	std::cout << "Type-checking variable declaration " << type.name << " " << id.name << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking variable declaration " << type.name << " " << id.name << std::endl;
   Symbol* sym = scope->LookUp(id.name);
   if (sym != NULL) {
-    std::cout << "Variable redeclaration" << std::endl;
+    typechecker.printErrorMessage("Variable redeclaration " + id.name, lineno);
     return NULL;
   }
   SType* tmp;
@@ -136,7 +168,7 @@ SType* NVariableDeclaration::typeCheck(Scope* scope)
 
 SType* NBinaryOperator::typeCheck(Scope* scope)
 {
-	std::cout << "Type-checking binary operation " << op << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking binary operation " << op << std::endl;
 
   SType* tlhs = lhs.typeCheck(scope);
 	SType* trhs = rhs.typeCheck(scope);
@@ -166,24 +198,22 @@ SType* NBinaryOperator::typeCheck(Scope* scope)
       else if (tlhs->type == trhs->type && tlhs->type == Type::getDoubleTy(getGlobalContext()))
         return new SType(Type::getInt1Ty(getGlobalContext()), sec);
     default:
-      std::cout << "Failed on NBinaryOperator" << std::endl;
+      typechecker.printErrorMessage( "Type mismatch on binary operator", lineno );
 	    return NULL;
-      break;
 	}
 }
 
 SType* NIfExpression::typeCheck(Scope* scope)
 {
-	std::cout << "Type-checking if-then-else" << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking if-then-else" << std::endl;
   SType* gtype = iguard.typeCheck(scope);
   if (gtype == NULL) return NULL;
   if (gtype->type != Type::getInt1Ty(getGlobalContext())) {
-    // TODO: Better error message
-    std::cout << "Failed on the guard" << std::endl;
+    typechecker.printErrorMessage("Failed on the guard", lineno);
 	  return NULL;
   }
 
-  std::cout << "(Branch) Creating a new scope of security type: " << gtype->sec << std::endl;
+  if (typechecker.getVerbose()) std::cout << "(Branch) Creating a new scope of security type: " << gtype->sec << std::endl;
   scope->InitializeScope("branch", (scope->getSecurityContext() == "high" ? "high" : gtype->sec)); // Create a new scope for this branch
   SType* ttype = ithen.typeCheck(scope);
   if (ttype == NULL) {
@@ -191,8 +221,7 @@ SType* NIfExpression::typeCheck(Scope* scope)
     return NULL;
   }
   if (ttype->type != Type::getVoidTy(getGlobalContext())) {
-    // TODO: Better error message
-    std::cout << "Failed on the then" << std::endl;
+    typechecker.printErrorMessage("Failed on the then", lineno);
     scope->FinalizeScope();
 	  return NULL;
   }
@@ -205,8 +234,7 @@ SType* NIfExpression::typeCheck(Scope* scope)
     return NULL;
   }
   if (etype->type != Type::getVoidTy(getGlobalContext())) {
-    // TODO: Better error message
-    std::cout << "Failed on the else" << std::endl;
+    typechecker.printErrorMessage("Failed on the else", lineno);
     scope->FinalizeScope();
 	  return NULL;
   }
@@ -217,7 +245,7 @@ SType* NIfExpression::typeCheck(Scope* scope)
 
 SType* NExpressionStatement::typeCheck(Scope* scope)
 {
-	std::cout << "Type-checking " << typeid(expression).name() << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking " << typeid(expression).name() << std::endl;
 	return expression.typeCheck(scope);
 }
 
@@ -226,15 +254,15 @@ SType* NBlock::typeCheck(Scope* scope)
 	StatementList::const_iterator it;
 	Value *last = NULL;
 	for (it = statements.begin(); it != statements.end(); it++) {
-		std::cout << "Type-checking " << typeid(**it).name() << std::endl;
+		if (typechecker.getVerbose()) std::cout << "Type-checking " << typeid(**it).name() << std::endl;
 		SType* stype = (**it).typeCheck(scope);
     if (stype == NULL) return NULL;
     if (stype->type != Type::getVoidTy(getGlobalContext())) {
-      std::cout << "Failed to typecheck to void" << std::endl;
+    typechecker.printErrorMessage("Failed to typecheck to void", lineno);
       return NULL;
     }
 	}
-	std::cout << "Type-checking block" << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking block" << std::endl;
 	return new SType(Type::getVoidTy(getGlobalContext()), "");
 }
 
@@ -252,7 +280,7 @@ SType* NMethodCall::typeCheck(Scope* scope)
 		args.push_back((**it).typeCheck(st));
 	}
 	CallInst *call = CallInst::Create(function, args, "", context.currentBlock());
-	std::cout << "Type-checking method call: " << id.name << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking method call: " << id.name << std::endl;
 	return call;
   //*/
   return NULL;
@@ -283,7 +311,7 @@ SType* NFunctionDeclaration::typeCheck(Scope* scope)
 	ReturnInst::Create(getGlobalContext(), bblock);
 
 	context.popBlock();
-	std::cout << "Type-checking function: " << id.name << std::endl;
+	if (typechecker.getVerbose()) std::cout << "Type-checking function: " << id.name << std::endl;
 	return function;
   //*/
   return NULL;

@@ -81,20 +81,20 @@ block : /*blank*/ { $$ = new NBlock(); }
       | block expr { $$->statements.push_back($<stmt>2); }
       ;
 
-var_decl : type ident TSC { $$ = new NVariableDeclaration(*$1, *$2, *(new NSecurity(""))); }
-         | type ident TEQUAL expr TSC{ $$ = new NVariableDeclaration(*$1, *$2, $4, *(new NSecurity(""))); }
-         | sec type ident TSC { $$ = new NVariableDeclaration(*$2, *$3, *$1); }
-         | sec type ident TEQUAL expr TSC{ $$ = new NVariableDeclaration(*$2, *$3, $5, *$1); }
+var_decl : type ident TSC { $$ = new NVariableDeclaration(*$1, *$2, *(new NSecurity(""))); $$->lineno = yylineno; }
+         | type ident TEQUAL expr TSC{ $$ = new NVariableDeclaration(*$1, *$2, $4, *(new NSecurity(""))); $$->lineno = yylineno; }
+         | sec type ident TSC { $$ = new NVariableDeclaration(*$2, *$3, *$1); $$->lineno = yylineno; }
+         | sec type ident TEQUAL expr TSC{ $$ = new NVariableDeclaration(*$2, *$3, $5, *$1); $$->lineno = yylineno; }
          ;
 
 func_decl : type ident TLPAREN func_decl_args TRPAREN TLBRACE block TRBRACE
             { $$ = new NFunctionDeclaration(*$1, *$2, *$4, *$7); delete $4; }
           ;
     
-type : T_TYPE { $$ = new NType(*$1); delete $1; }
+type : T_TYPE { $$ = new NType(*$1); delete $1; $$->lineno = yylineno; }
      ;
 
-sec : T_SEC { $$ = new NSecurity(*$1); delete $1; }
+sec : T_SEC { $$ = new NSecurity(*$1); delete $1; $$->lineno = yylineno; }
     ;
  
 func_decl_args : /*blank*/  { $$ = new VariableList(); }
@@ -102,13 +102,13 @@ func_decl_args : /*blank*/  { $$ = new VariableList(); }
           | func_decl_args TCOMMA var_decl { $1->push_back($<var_decl>3); }
           ;
     
-expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); }
+expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); $$->lineno = yylineno; }
      | ident TLPAREN call_args TRPAREN TSC { $$ = new NMethodCall(*$1, *$3); delete $3; }
      | ident { $<ident>$ = $1; }
      | TIF expr TLBRACE block TRBRACE TELSE TLBRACE block TRBRACE { $$ = new NIfExpression(*$2, *$4, *$8); }
      | numeric
      | boolean 
-     | expr TPLUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
+     | expr TPLUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); $$->lineno = yylineno; }
      | expr TMINUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
      | expr TMUL expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
      | expr TDIV expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
