@@ -151,19 +151,53 @@ Value* NVariableDeclaration::codeGen(Scope* scope)
 Value* NBinaryOperator::codeGen(Scope* scope)
 {
 	std::cout << "Creating binary operation " << op << std::endl;
-	Instruction::BinaryOps instr;
-	switch (op) {
-		case TPLUS: 	instr = Instruction::Add; goto math;
-		case TMINUS: 	instr = Instruction::Sub; goto math;
-		case TMUL: 		instr = Instruction::Mul; goto math;
-		case TDIV: 		instr = Instruction::SDiv; goto math;
-				
-		/* TODO comparison */
-	}
+	Instruction::BinaryOps binstr;
+	Instruction::OtherOps oinstr;
+  CmpInst::Predicate pred;
+  Value* lhsv = lhs.codeGen(scope);
 
-	return NULL;
+	switch (op) {
+    // Arith instructions
+		case TPLUS: 	binstr = Instruction::Add; goto math;
+		case TMINUS: 	binstr = Instruction::Sub; goto math;
+		case TMUL: 		binstr = Instruction::Mul; goto math;
+		case TDIV: 		binstr = Instruction::SDiv; goto math;
+  }
+  
+  // For now, we assume that if the type checker passed,
+  // both lhs and rhs have the exact same value.
+  // So we don't promote the int 1 to a float 1.0,
+  // though we probably should
+  if (lhsv->getType() == Type::getDoubleTy(getGlobalContext())) {
+    // Comparision instructions, doubles
+    oinstr = Instruction::FCmp; 
+	  switch (op) {
+      case TCEQ:    pred = CmpInst::FCMP_UEQ; goto comp;
+      case TCNE:    pred = CmpInst::FCMP_UNE; goto comp;
+      case TCLT:    pred = CmpInst::FCMP_ULT; goto comp;
+      case TCLE:    pred = CmpInst::FCMP_ULE; goto comp;
+      case TCGT:    pred = CmpInst::FCMP_UGT; goto comp;
+      case TCGE:    pred = CmpInst::FCMP_UGE; goto comp;
+    }
+  } else {
+    // Comparison instructions, int
+    oinstr = Instruction::ICmp; 
+	  switch (op) {
+      case TCEQ:    pred = CmpInst::ICMP_EQ; goto comp;
+      case TCNE:    pred = CmpInst::ICMP_NE; goto comp;
+      case TCLT:    pred = CmpInst::ICMP_SLT; goto comp;
+      case TCLE:    pred = CmpInst::ICMP_SLE; goto comp;
+      case TCGT:    pred = CmpInst::ICMP_SGT; goto comp;
+      case TCGE:    pred = CmpInst::ICMP_SGE; goto comp;
+    }
+  }
+
+comp:
+	return CmpInst::Create(oinstr, pred, lhsv,
+    rhs.codeGen(scope), "", Builder.GetInsertBlock());
+
 math:
-	return BinaryOperator::Create(instr, lhs.codeGen(scope), 
+	return BinaryOperator::Create(binstr, lhsv,
 		rhs.codeGen(scope), "", Builder.GetInsertBlock());
 }
 
@@ -178,9 +212,9 @@ Value* NIfExpression::codeGen(Scope* scope)
   
   // Create blocks for the then and else cases.  Insert the 'then' block at the
   // end of the function.
-  BasicBlock *ThenBB = BasicBlock::Create(getGlobalContext(), "then", TheFunction);
-  BasicBlock *ElseBB = BasicBlock::Create(getGlobalContext(), "else");
-  BasicBlock *MergeBB = BasicBlock::Create(getGlobalContext(), "ifcont");
+  BasicBlock *ThenBB = BasicBlock::Create(getGlobalContext(), "if.then", TheFunction);
+  BasicBlock *ElseBB = BasicBlock::Create(getGlobalContext(), "if.else");
+  BasicBlock *MergeBB = BasicBlock::Create(getGlobalContext(), "if.end");
   
   Builder.CreateCondBr(CondV, ThenBB, ElseBB);
   
@@ -190,7 +224,6 @@ Value* NIfExpression::codeGen(Scope* scope)
   scope->InitializeScope("branch", "");
   Value *ThenV = ithen.codeGen(scope);
   scope->FinalizeScope();
-  std::cout << "ThenV: " << ThenV << std::endl;
   if (ThenV == NULL) return NULL;
   
   Builder.CreateBr(MergeBB);
@@ -204,7 +237,6 @@ Value* NIfExpression::codeGen(Scope* scope)
   scope->InitializeScope("branch", "");
   Value *ElseV = ielse.codeGen(scope);
   scope->FinalizeScope();
-  std::cout << "ElseV: " << ThenV << std::endl;
   if (ElseV == NULL) return NULL;
   
   Builder.CreateBr(MergeBB);
@@ -214,12 +246,7 @@ Value* NIfExpression::codeGen(Scope* scope)
   // Emit merge block.
   TheFunction->getBasicBlockList().push_back(MergeBB);
   Builder.SetInsertPoint(MergeBB);
-  // TODO
-  PHINode *PN = Builder.CreatePHI(Type::getVoidTy(getGlobalContext()), 2, "iftmp");
-  
-  PN->addIncoming(ThenV, ThenBB);
-  PN->addIncoming(ElseV, ElseBB);
-  return PN;
+  return ElseV;
 }
 
 Value* NExpressionStatement::codeGen(Scope* scope)
@@ -230,6 +257,7 @@ Value* NExpressionStatement::codeGen(Scope* scope)
 
 Value* NBlock::codeGen(Scope* scope)
 {
+	std::cout << "Creating block" << std::endl;
 	StatementList::const_iterator it;
 	Value *last = NULL;
 	for (it = statements.begin(); it != statements.end(); it++) {
@@ -246,7 +274,6 @@ Value* NBlock::codeGen(Scope* scope)
         Type::getInt1Ty(getGlobalContext())), 
         Type::getInt1Ty(getGlobalContext()), "", Builder.GetInsertBlock());
   }
-	std::cout << "Creating block" << std::endl;
 	return last;
 }
 
