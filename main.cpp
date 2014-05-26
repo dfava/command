@@ -101,6 +101,7 @@ int main(int argc, char **argv)
     }
     if (geningcode) {
       codegen.init();
+      if (filename != NULL) codegen.setFileName("tmp.bc");
       codegen.setVerbose(verbose);
       codegen.generateCode(*programBlock);
       codegen.runCode();

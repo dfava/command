@@ -9,7 +9,8 @@
 #include <llvm/PassManager.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/CallingConv.h>
-#include <llvm/Bitcode/ReaderWriter.h>
+//#include <llvm/Bitcode/ReaderWriter.h>
+#include <llvm-c/BitWriter.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/IR/IRPrintingPasses.h>
 #include <llvm/IR/IRBuilder.h>
@@ -39,14 +40,16 @@ void CodeGen::generateCode(NBlock& root)
   context->scope->InitializeScope("global");
   // Create a main function and add the first basic block to it
   ArrayRef<llvm::Type *> argTypes;
-	FunctionType *ftype = FunctionType::get(Type::getVoidTy(getGlobalContext()), argTypes, false);
-	mainFunction = Function::Create(ftype, GlobalValue::InternalLinkage, "main", context->module);
+	//FunctionType *ftype = FunctionType::get(Type::getVoidTy(getGlobalContext()), argTypes, false);
+	FunctionType *ftype = FunctionType::get(Type::getInt32Ty(getGlobalContext()), argTypes, false);
+	mainFunction = Function::Create(ftype, GlobalValue::ExternalLinkage, "main", context->module);
 	BasicBlock *bblock = BasicBlock::Create(getGlobalContext(), "entry", mainFunction, 0);
   // Set the Builder's basic block to this first block from the main function
   Builder.SetInsertPoint(bblock);
   // Traverse AST and generate code
   root.codeGen(context->scope);
-  Builder.CreateRetVoid();
+  //Builder.CreateRetVoid();
+  Builder.CreateRet(ConstantInt::get(Type::getInt32Ty(getGlobalContext()), 0, true));
   // Cleanup scopes
   assert(context->scope->depth() == 1);
   context->scope->FinalizeScope();
@@ -55,6 +58,9 @@ void CodeGen::generateCode(NBlock& root)
   // Dump IR to screen
 	if (verbose) std::cout << "Code is generated." << std::endl;
   context->module->dump();
+  if (filename != NULL) {
+    LLVMWriteBitcodeToFile((LLVMOpaqueModule *)context->module, filename);
+  }
 }
 
 /* Executes the AST by running the main function */

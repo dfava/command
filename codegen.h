@@ -15,6 +15,7 @@ public:
 
 class CodeGen {
 private:
+  char* filename;
   bool verbose = false;
   llvm::Function *mainFunction;
 
@@ -29,6 +30,7 @@ public:
     }
   };
   void init();
+  void setFileName(char* filename) {this->filename = filename; };
   void generateCode(NBlock& root);
   llvm::GenericValue runCode();
   void setVerbose(bool v) { verbose = v; };
