@@ -5,6 +5,7 @@
 #include "node.h"
 #include "codegen.h"
 #include "typecheck.h"
+#include "visitor.h"
 
 #define DEBUG 0
 #define DPRNT(fmt, ...) do { if (DEBUG) fprintf(stderr, fmt, __VA_ARGS__); } while (0)
@@ -32,6 +33,7 @@ int main(int argc, char **argv)
 {
     bool typechecking = true;
     bool geningcode = true;
+    bool graphing = false;
     bool verbose = false;
     char* filename = NULL;
     int c;
@@ -91,6 +93,10 @@ int main(int argc, char **argv)
     }
     if (int ret = yyparse()) return ret;
     DPRNT("programBlock: %p\n", programBlock);
+    if (graphing) {
+      GraphVisitor graphvisitor;
+      programBlock->accept(graphvisitor);
+    }
     if (typechecking) {
       typechecker.setVerbose(verbose);
       if (filename != NULL) typechecker.setFileName(filename); // For printing error messages

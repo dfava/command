@@ -4,7 +4,6 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Type.h>
 #include <llvm/IR/LLVMContext.h>
-
 #include <map>
 #include <iostream>
 #include <fstream>
@@ -12,7 +11,6 @@
 #include <string>
 
 using namespace llvm;
-using namespace std;
 
 extern TypeChecker typechecker;
 
@@ -33,7 +31,7 @@ void TypeChecker::printErrorMessage(std::string message, int lineno)
   if (filename != NULL) {
     std::cerr << filename;
     if (lineno > 0) {
-      std::cerr << " line " << lineno << ": " << endl << fmap[lineno] << std::endl;
+      std::cerr << " line " << lineno << ": " << std::endl << fmap[lineno] << std::endl;
     } else {
       std::cerr << std::endl;
     }
@@ -159,8 +157,8 @@ SType* NVariableDeclaration::typeCheck(Scope* scope)
   scope->Insert(id.name, sym);
   // Check that the assignment part
 	if (assignmentExpr != NULL) {
-		NAssignment assn(id, *assignmentExpr);
-		SType* atype = assn.typeCheck(scope);
+		NAssignment assign(id, *assignmentExpr);
+		SType* atype = assign.typeCheck(scope);
     if (atype == NULL) return NULL;
   }
 	return new SType(Type::getVoidTy(getGlobalContext()), "");

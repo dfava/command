@@ -1,5 +1,6 @@
 #ifndef __NODE_H_
 #define __NODE_H_
+#include "visitor.h"
 #include "codegen.h"
 #include <iostream>
 #include <vector>
@@ -15,12 +16,15 @@ typedef std::vector<NStatement*> StatementList;
 typedef std::vector<NExpression*> ExpressionList;
 typedef std::vector<NVariableDeclaration*> VariableList;
 
+class Visitor;
+
 class Node {
 public:
     int lineno;
     virtual ~Node() {}
     virtual llvm::Value* codeGen(Scope* scope) { }
     virtual SType* typeCheck(Scope* scope) { }
+    virtual void accept(class Visitor &visitor) { }
 };
 
 class NExpression : public Node {
@@ -29,12 +33,28 @@ class NExpression : public Node {
 class NStatement : public Node {
 };
 
+class NBlock : public NExpression {
+public:
+    StatementList statements;
+    NBlock() { }
+    virtual llvm::Value* codeGen(Scope* scope);
+    virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) {
+      StatementList::const_iterator it;
+	    for (it = statements.begin(); it != statements.end(); it++) {
+		    (**it).accept(visitor);
+	    }
+      visitor.visit(this);
+    };
+};
+
 class NInteger : public NExpression {
 public:
     long long value;
     NInteger(long long value) : value(value) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) { visitor.visit(this); };
 };
 
 class NBool : public NExpression {
@@ -43,6 +63,7 @@ public:
     NBool(std::string value) : value(value) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) { visitor.visit(this); };
 };
 
 class NDouble : public NExpression {
@@ -51,6 +72,7 @@ public:
     NDouble(double value) : value(value) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) { visitor.visit(this); };
 };
 
 class NType : public NExpression {
@@ -59,6 +81,7 @@ public:
     NType(const std::string& name) : name(name) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) { visitor.visit(this); };
 };
 
 class NSecurity : public NExpression {
@@ -67,6 +90,7 @@ public:
     NSecurity(const std::string& name) : name(name) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) { visitor.visit(this); };
 };
 
 class NIdentifier : public NExpression {
@@ -75,6 +99,7 @@ public:
     NIdentifier(const std::string& name) : name(name) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) { visitor.visit(this); };
 };
 
 class NIfExpression : public NExpression {
@@ -86,17 +111,12 @@ public:
         iguard(iguard), ithen(ithen), ielse(ielse) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
-};
-
-class NMethodCall : public NExpression {
-public:
-    const NIdentifier& id;
-    ExpressionList arguments;
-    NMethodCall(const NIdentifier& id, ExpressionList& arguments) :
-        id(id), arguments(arguments) { }
-    NMethodCall(const NIdentifier& id) : id(id) { }
-    virtual llvm::Value* codeGen(Scope* scope);
-    virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) {
+      visitor.visit(this);
+      iguard.accept(visitor);
+      ithen.accept(visitor);
+      ielse.accept(visitor);
+    };
 };
 
 class NBinaryOperator : public NExpression {
@@ -108,6 +128,11 @@ public:
         lhs(lhs), rhs(rhs), op(op) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) {
+      visitor.visit(this);
+      lhs.accept(visitor);
+      rhs.accept(visitor);
+    };
 };
 
 class NAssignment : public NExpression {
@@ -118,16 +143,13 @@ public:
         lhs(lhs), rhs(rhs) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) {
+      visitor.visit(this);
+      rhs.accept(visitor);
+    };
 };
 
-class NBlock : public NExpression {
-public:
-    StatementList statements;
-    NBlock() { }
-    virtual llvm::Value* codeGen(Scope* scope);
-    virtual SType* typeCheck(Scope* scope);
-};
-
+// TODO: Why even have NExpressionStatement?!
 class NExpressionStatement : public NStatement {
 public:
     NExpression& expression;
@@ -135,6 +157,10 @@ public:
         expression(expression) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) {
+      visitor.visit(this);
+      expression.accept(visitor);
+    };
 };
 
 class NVariableDeclaration : public NStatement {
@@ -149,6 +175,15 @@ public:
         type(type), id(id), assignmentExpr(assignmentExpr), security(sec) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) {
+      visitor.visit(this);
+      ((NType&)type).accept(visitor);
+      security.accept(visitor);
+	    if (assignmentExpr != NULL) {
+		    NAssignment assign(id, *assignmentExpr);
+        assign.accept(visitor);
+      }
+    };
 };
 
 class NFunctionDeclaration : public NStatement {
@@ -162,5 +197,18 @@ public:
         type(type), id(id), arguments(arguments), block(block) { }
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) { visitor.visit(this); };
+};
+
+class NMethodCall : public NExpression {
+public:
+    const NIdentifier& id;
+    ExpressionList arguments;
+    NMethodCall(const NIdentifier& id, ExpressionList& arguments) :
+        id(id), arguments(arguments) { }
+    NMethodCall(const NIdentifier& id) : id(id) { }
+    virtual llvm::Value* codeGen(Scope* scope);
+    virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) { visitor.visit(this); };
 };
 #endif // __NODE_H_

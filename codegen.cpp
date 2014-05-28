@@ -9,7 +9,6 @@
 #include <llvm/PassManager.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/CallingConv.h>
-//#include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm-c/BitWriter.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/IR/IRPrintingPasses.h>
@@ -20,7 +19,6 @@
 #include <llvm/Support/raw_ostream.h>
 
 using namespace llvm;
-using namespace std;
 
 extern CodeGen codegen;
 
@@ -69,7 +67,7 @@ GenericValue CodeGen::runCode() {
   InitializeNativeTarget();
   ExecutionEngine* ee = EngineBuilder(context->module).create();
   assert(ee != 0);
-	vector<GenericValue> noargs;
+	std::vector<GenericValue> noargs;
 	GenericValue v = ee->runFunction(mainFunction, noargs);
 	if (verbose) std::cout << "Code was run.\n";
   return v;
@@ -150,8 +148,8 @@ Value* NVariableDeclaration::codeGen(Scope* scope)
   Symbol* sym = new Symbol(alloc, new SType());
   scope->Insert(id.name, sym);
 	if (assignmentExpr != NULL) {
-		NAssignment assn(id, *assignmentExpr);
-		assn.codeGen(scope);
+		NAssignment assign(id, *assignmentExpr);
+		assign.codeGen(scope);
   }
 	return alloc;
 }
