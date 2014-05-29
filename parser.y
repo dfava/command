@@ -48,10 +48,8 @@
 %type <sec> sec
 %type <ident> ident
 %type <expr> numeric boolean expr 
-%type <varvec> func_decl_args
-%type <exprvec> call_args
 %type <block> program stmts block
-%type <stmt> stmt var_decl func_decl
+%type <stmt> stmt var_decl
 
 /* Operator precedence */
 %nonassoc TTHEN
@@ -72,7 +70,7 @@ stmts : stmt { $$ = new NBlock(); $$->statements.push_back($<stmt>1); }
       | stmts stmt { $1->statements.push_back($<stmt>2); }
       ;
 
-stmt : var_decl | func_decl
+stmt : var_decl
      | expr { $$ = new NExpressionStatement(*$1); }
      ;
 
@@ -87,23 +85,13 @@ var_decl : type ident TSC { $$ = new NVariableDeclaration(*$1, *$2, *(new NSecur
          | sec type ident TEQUAL expr TSC{ $$ = new NVariableDeclaration(*$2, *$3, $5, *$1); $$->lineno = yylineno; }
          ;
 
-func_decl : type ident TLPAREN func_decl_args TRPAREN TLBRACE block TRBRACE
-            { $$ = new NFunctionDeclaration(*$1, *$2, *$4, *$7); delete $4; }
-          ;
-    
 type : T_TYPE { $$ = new NType(*$1); delete $1; $$->lineno = yylineno; }
      ;
 
 sec : T_SEC { $$ = new NSecurity(*$1); delete $1; $$->lineno = yylineno; }
     ;
  
-func_decl_args : /*blank*/  { $$ = new VariableList(); }
-          | var_decl { $$ = new VariableList(); $$->push_back($<var_decl>1); }
-          | func_decl_args TCOMMA var_decl { $1->push_back($<var_decl>3); }
-          ;
-    
 expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); $$->lineno = yylineno; }
-     | ident TLPAREN call_args TRPAREN TSC { $$ = new NMethodCall(*$1, *$3); delete $3; }
      | ident { $<ident>$ = $1; }
      | TIF expr TLBRACE block TRBRACE TELSE TLBRACE block TRBRACE { $$ = new NIfExpression(*$2, *$4, *$8); }
      | numeric
@@ -130,13 +118,4 @@ numeric : T_VAL_INTEGER { $$ = new NInteger(atol($1->c_str())); delete $1; }
 
 boolean : T_VAL_BOOL { $$ = new NBool($1->c_str()); delete $1; }
         ;
-    
-call_args : /*blank*/  { $$ = new ExpressionList(); }
-          | expr { $$ = new ExpressionList(); $$->push_back($1); }
-          | call_args TCOMMA expr  { $1->push_back($3); }
-          ;
-
-
-           ;
-
 %%

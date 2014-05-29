@@ -1,6 +1,7 @@
 #ifndef __VISITOR_H_
 #define __VISITOR_H_
 #include "node.h"
+#include <stdint.h>
 
 class NInteger;
 class NBool;
@@ -15,44 +16,21 @@ class NBlock;
 class NExpression;
 class NExpressionStatement;
 class NVariableDeclaration;
-class NFunctionDeclaration;
-class NMethodCall;
 
 class Visitor {
 public:
-    virtual void visit(NInteger* nInteger) = 0;
-    virtual void visit(NBool* nBool) = 0;
-    virtual void visit(NDouble* nDouble) = 0;
-    virtual void visit(NType* nType) = 0;
-    virtual void visit(NSecurity* nSecurity) = 0;
-    virtual void visit(NIdentifier* nIdentifier) = 0;
-    virtual void visit(NIfExpression* nIfExpression) = 0;
-    virtual void visit(NBinaryOperator* nBinaryOperator) = 0;
-    virtual void visit(NAssignment* nAssignment) = 0;
-    virtual void visit(NBlock* nBlock) = 0;
-    virtual void visit(NExpression* nExpression) { };
-    virtual void visit(NExpressionStatement* nExpressionStatement) = 0;
-    virtual void visit(NVariableDeclaration* nVariableDeclaration) = 0;
-    virtual void visit(NFunctionDeclaration* nFunctionDeclaration) = 0;
-    virtual void visit(NMethodCall* nMethodCall) = 0;
+    virtual void visit(NInteger* nInteger, uint64_t flag) = 0;
+    virtual void visit(NBool* nBool, uint64_t flag) = 0;
+    virtual void visit(NDouble* nDouble, uint64_t flag) = 0;
+    virtual void visit(NType* nType, uint64_t flag) = 0;
+    virtual void visit(NSecurity* nSecurity, uint64_t flag) = 0;
+    virtual void visit(NIdentifier* nIdentifier, uint64_t flag) = 0;
+    virtual void visit(NIfExpression* nIfExpression, uint64_t flag) = 0;
+    virtual void visit(NBinaryOperator* nBinaryOperator, uint64_t flag) = 0;
+    virtual void visit(NAssignment* nAssignment, uint64_t flag) = 0;
+    virtual void visit(NBlock* nBlock, uint64_t flag) = 0;
+    virtual void visit(NExpression* nExpression, uint64_t flag) { };
+    virtual void visit(NExpressionStatement* nExpressionStatement, uint64_t flag) = 0;
+    virtual void visit(NVariableDeclaration* nVariableDeclaration, uint64_t flag) = 0;
 };
-
-class GraphVisitor : public Visitor {
-public:
-    virtual void visit(NInteger* nInteger);
-    virtual void visit(NBool* nBool);
-    virtual void visit(NDouble* nDouble);
-    virtual void visit(NType* nType);
-    virtual void visit(NSecurity* nSecurity);
-    virtual void visit(NIdentifier* nIdentifier);
-    virtual void visit(NIfExpression* nIfExpression);
-    virtual void visit(NBinaryOperator* nBinaryOperator);
-    virtual void visit(NAssignment* nAssignment);
-    virtual void visit(NBlock* nBlock);
-    virtual void visit(NExpressionStatement* nExpressionStatement);
-    virtual void visit(NVariableDeclaration* nVariableDeclaration);
-    virtual void visit(NFunctionDeclaration* nFunctionDeclaration);
-    virtual void visit(NMethodCall* nMethodCall);
-};
-
 #endif // __VISITOR_H_
