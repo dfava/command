@@ -124,6 +124,7 @@ void CodeGenVisitor::visit(NIdentifier* element, uint64_t flag)
   if (verbose) std::cout << "CodeGenVisitor " << typeid(element).name() << std::endl;
 	if (context->scope->LookUp(element->name) == NULL) {
 		std::cerr << "undeclared variable " << element->name << std::endl;
+    assert(0);
     // TODO
 		//return NULL;
 	}
@@ -134,43 +135,63 @@ void CodeGenVisitor::visit(NIdentifier* element, uint64_t flag)
 void CodeGenVisitor::visit(NIfExpression* element, uint64_t flag)
 {
   if (verbose) std::cout << "CodeGenVisitor " << typeid(element).name() << std::endl;
-  Value *CondV = vals.front();
-  vals.pop_front(); // Pop guard
-  if (CondV == NULL) {
-    // TODO
-    //return NULL;
+  switch (flag)
+  {
+    case V_FLAG_IF_GUARD | V_FLAG_EXIT:
+      {
+        if (verbose) std::cout << "CodeGenVisitor enter " << typeid(element).name() << std::endl;
+        Value *CondV = vals.front();
+        vals.pop_front(); // Pop guard
+        if (CondV == NULL) {
+          assert(0);
+          // TODO
+          //return NULL;
+        }
+        If* myIf = new If();
+        myIf->function = Builder.GetInsertBlock()->getParent();
+        // Create blocks for the then and else cases.  Insert the 'then' block at the
+        // end of the function.
+        myIf->thenBB = BasicBlock::Create(getGlobalContext(), "if.then", myIf->function);
+        myIf->elseBB = BasicBlock::Create(getGlobalContext(), "if.else");
+        myIf->mergeBB = BasicBlock::Create(getGlobalContext(), "if.end");
+        Builder.CreateCondBr(CondV, myIf->thenBB, myIf->elseBB);
+        ifs.push_front(myIf);
+      }
+      break;
+    case V_FLAG_IF_THEN | V_FLAG_ENTER:
+      if (verbose) std::cout << "CodeGenVisitor then-enter " << typeid(element).name() << std::endl;
+      // Emit then block.
+      Builder.SetInsertPoint(ifs.front()->thenBB);
+      break;
+    case V_FLAG_IF_THEN | V_FLAG_EXIT:
+      if (verbose) std::cout << "CodeGenVisitor then-exit " << typeid(element).name() << std::endl;
+      Builder.CreateBr(ifs.front()->mergeBB);
+      break;
+    case V_FLAG_IF_ELSE | V_FLAG_ENTER:
+      if (verbose) std::cout << "CodeGenVisitor else-enter " << typeid(element).name() << std::endl;
+      // Emit else block.
+      ifs.front()->function->getBasicBlockList().push_back(ifs.front()->elseBB);
+      Builder.SetInsertPoint(ifs.front()->elseBB);
+      break;
+    case V_FLAG_IF_ELSE | V_FLAG_EXIT:
+      if (verbose) std::cout << "CodeGenVisitor else-exit " << typeid(element).name() << std::endl;
+      Builder.CreateBr(ifs.front()->mergeBB);
+      break;
+    case V_FLAG_EXIT:
+      if (verbose) std::cout << "CodeGenVisitor exit " << typeid(element).name() << std::endl;
+      // Emit merge block.
+      ifs.front()->function->getBasicBlockList().push_back(ifs.front()->mergeBB);
+      Builder.SetInsertPoint(ifs.front()->mergeBB);
+      {
+        If* myIf = ifs.front();
+        delete myIf;
+      }
+      ifs.pop_front();
+      break;
+    default:
+      return;
   }
-  
-  Function *TheFunction = Builder.GetInsertBlock()->getParent();
-  
-  // Create blocks for the then and else cases.  Insert the 'then' block at the
-  // end of the function.
-  BasicBlock *ThenBB = BasicBlock::Create(getGlobalContext(), "if.then", TheFunction);
-  BasicBlock *ElseBB = BasicBlock::Create(getGlobalContext(), "if.else");
-  BasicBlock *MergeBB = BasicBlock::Create(getGlobalContext(), "if.end");
-  
-  Builder.CreateCondBr(CondV, ThenBB, ElseBB);
-  
-  // Emit then value.
-  Builder.SetInsertPoint(ThenBB);
-  
-  Builder.CreateBr(MergeBB);
-  // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
-  ThenBB = Builder.GetInsertBlock();
-  
-  // Emit else block.
-  TheFunction->getBasicBlockList().push_back(ElseBB);
-  Builder.SetInsertPoint(ElseBB);
-  
-  Builder.CreateBr(MergeBB);
-  // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
-  ElseBB = Builder.GetInsertBlock();
-  
-  // Emit merge block.
-  TheFunction->getBasicBlockList().push_back(MergeBB);
-  Builder.SetInsertPoint(MergeBB);
-  // TODO
-  //return ElseV;
+  // No need to add anything to vals
 }
 
 void CodeGenVisitor::visit(NBinaryOperator* element, uint64_t flag)
@@ -179,9 +200,9 @@ void CodeGenVisitor::visit(NBinaryOperator* element, uint64_t flag)
 	Instruction::BinaryOps binstr;
 	Instruction::OtherOps oinstr;
   CmpInst::Predicate pred;
-  Value* lhsv = vals.front();
-  vals.pop_front(); 
   Value* rhsv = vals.front();
+  vals.pop_front(); 
+  Value* lhsv = vals.front();
   vals.pop_front(); 
 
 	switch (element->op) {
@@ -234,6 +255,7 @@ void CodeGenVisitor::visit(NAssignment* element, uint64_t flag)
   if (verbose) std::cout << "CodeGenVisitor " << typeid(element).name() << std::endl;
 	if (context->scope->LookUp(element->lhs.name) == NULL) {
 		std::cerr << "undeclared variable " << element->lhs.name << std::endl;
+    assert(0);
     // TODO
 		//return NULL;
 	}

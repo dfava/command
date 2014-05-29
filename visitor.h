@@ -19,9 +19,12 @@ class NVariableDeclaration;
 
 // Visitor Flags
 enum {
-  V_FLAG_NONE = 0,
-  V_FLAG_ENTER = 1,
-  V_FLAG_EXIT = 2,
+  V_FLAG_NONE = -1,
+  V_FLAG_ENTER = 0,
+  V_FLAG_EXIT = 1,
+  V_FLAG_IF_GUARD = 8,
+  V_FLAG_IF_THEN = 0xc,
+  V_FLAG_IF_ELSE = 0xe,
 };
 
 class Visitor {

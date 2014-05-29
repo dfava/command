@@ -32,15 +32,19 @@ void usage(int argc, char** argv) {
 
 int main(int argc, char **argv)
 {
+    bool new_gen = false;
     bool typechecking = true;
     bool geningcode = true;
     bool verbose = false;
     char* filename = NULL;
     int c;
     opterr = 0;
-    while ((c = getopt (argc, argv, "f:g:ht:v:")) != -1)
+    while ((c = getopt (argc, argv, "nf:g:ht:v:")) != -1) // TODO: Remove the 'n'
        switch (c)
        {
+       case 'n':
+         new_gen = true;
+         break;
        case 'f':
          filename = optarg;
          break;
@@ -102,19 +106,21 @@ int main(int argc, char **argv)
       }
     }
     if (geningcode) {
-      CodeGenVisitor codeGenVis;
-      codeGenVis.init();
-      if (filename != NULL) codeGenVis.setFileName("tmp.bc");
-      codeGenVis.setVerbose(verbose);
-      programBlock->accept(codeGenVis);
-      codeGenVis.generateCode();
-      return 0;
-
-      codegen.init();
-      if (filename != NULL) codegen.setFileName("tmp.bc");
-      codegen.setVerbose(verbose);
-      codegen.generateCode(*programBlock);
-      codegen.runCode();
+      if (new_gen) {
+        CodeGenVisitor codeGenVis;
+        codeGenVis.init();
+        if (filename != NULL) codeGenVis.setFileName("tmp.bc");
+        codeGenVis.setVerbose(verbose);
+        programBlock->accept(codeGenVis);
+        codeGenVis.generateCode();
+        codeGenVis.runCode();
+      } else {
+        codegen.init();
+        if (filename != NULL) codegen.setFileName("tmp.bc");
+        codegen.setVerbose(verbose);
+        codegen.generateCode(*programBlock);
+        codegen.runCode();
+      }
     }
     
     return 0;

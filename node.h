@@ -113,10 +113,21 @@ public:
     virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) {
+      visitor.visit(this, V_FLAG_ENTER);
+
+      visitor.visit(this, V_FLAG_IF_GUARD | V_FLAG_ENTER);
       iguard.accept(visitor);
+      visitor.visit(this, V_FLAG_IF_GUARD | V_FLAG_EXIT);
+
+      visitor.visit(this, V_FLAG_IF_THEN | V_FLAG_ENTER);
       ithen.accept(visitor);
+      visitor.visit(this, V_FLAG_IF_THEN | V_FLAG_EXIT);
+
+      visitor.visit(this, V_FLAG_IF_ELSE | V_FLAG_ENTER);
       ielse.accept(visitor);
-      visitor.visit(this, V_FLAG_NONE);
+      visitor.visit(this, V_FLAG_IF_ELSE | V_FLAG_EXIT);
+
+      visitor.visit(this, V_FLAG_EXIT);
     };
 };
 

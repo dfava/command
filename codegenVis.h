@@ -10,11 +10,20 @@
 
 class CodeGenVisitor : public Visitor {
 private:
+  class If {
+  public:
+    llvm::Function *function = NULL;
+    llvm::BasicBlock *thenBB = NULL;
+    llvm::BasicBlock *elseBB = NULL;
+    llvm::BasicBlock *mergeBB = NULL;
+  };
+
   char* filename;
   bool verbose = false;
   llvm::Function *mainFunction;
   //llvm::IRBuilder<> *Builder = NULL;
   std::list<llvm::Value*> vals;
+  std::list<If*> ifs;
 
   class CodeGenContext {
   public:
