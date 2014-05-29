@@ -3,6 +3,7 @@
 #include "node.h"
 #include <stdint.h>
 
+class NSkip;
 class NInteger;
 class NBool;
 class NDouble;
@@ -29,6 +30,7 @@ enum {
 
 class Visitor {
 public:
+    virtual void visit(NSkip* nSkip, uint64_t flag) = 0;
     virtual void visit(NInteger* nInteger, uint64_t flag) = 0;
     virtual void visit(NBool* nBool, uint64_t flag) = 0;
     virtual void visit(NDouble* nDouble, uint64_t flag) = 0;

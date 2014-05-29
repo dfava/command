@@ -37,7 +37,7 @@
 %token <token> TCEQ TCNE TCLT TCLE TCGT TCGE TEQUAL
 %token <token> TLPAREN TRPAREN TLBRACE TRBRACE TCOMMA TDOT
 %token <token> TPLUS TMINUS TMUL TDIV TSC
-%token <token> TIF TTHEN TELSE
+%token <token> TIF TTHEN TELSE TSKIP
 
 /* Define the type of node our nonterminal symbols represent.
    The types refer to the %union declaration above. Ex: when
@@ -92,6 +92,7 @@ sec : T_SEC { $$ = new NSecurity(*$1); delete $1; $$->lineno = yylineno; }
     ;
  
 expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); $$->lineno = yylineno; }
+     | TSKIP TSC { $$ = new NSkip(); $$->lineno = yylineno; }
      | ident { $<ident>$ = $1; }
      | TIF expr TLBRACE block TRBRACE TELSE TLBRACE block TRBRACE { $$ = new NIfExpression(*$2, *$4, *$8); }
      | numeric

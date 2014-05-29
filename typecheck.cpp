@@ -58,6 +58,11 @@ bool TypeChecker::check(NBlock& root)
   return true;
 }
 
+SType* NSkip::typeCheck(Scope* scope)
+{
+	return new SType(Type::getVoidTy(getGlobalContext()), "");
+}
+
 SType* NInteger::typeCheck(Scope* scope)
 {
   if (typechecker.getVerbose()) std::cout << "Type-checking integer: " << value << std::endl;

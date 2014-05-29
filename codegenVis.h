@@ -33,6 +33,7 @@ private:
   };
 
 public:
+  virtual void visit(NSkip* nSkip, uint64_t flag);
   virtual void visit(NInteger* nInteger, uint64_t flag);
   virtual void visit(NBool* nBool, uint64_t flag);
   virtual void visit(NDouble* nDouble, uint64_t flag);

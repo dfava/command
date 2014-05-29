@@ -1,12 +1,18 @@
 high int a = 10;
 high int b;
-int c = 3;
 if a > 1 {
-  a = 1;
-} else {
-  // b is now declared as high, so this should work
   b = 2;
+} else {
+  a = 1;
+  int c;
+  skip;
+  if (c==0) {
+    // The low if(c==0) does not override the enclosing high if
+    // Thus, we are still in a high context 
+    // and the assignment below must fail
+    c = 1;
+  } else {
+    skip;
+  }
 }
 a = 2;
-// This should work because we are outside a high context
-c = 1;

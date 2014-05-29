@@ -86,6 +86,11 @@ static const Type *typeOf(const NType& type)
 	return Type::getVoidTy(getGlobalContext());
 }
 
+void CodeGenVisitor::visit(NSkip* element, uint64_t flag)
+{
+  if (verbose) std::cout << "CodeGenVisitor " << typeid(element).name() << std::endl;
+}
+
 void CodeGenVisitor::visit(NInteger* element, uint64_t flag)
 {
   if (verbose) std::cout << "CodeGenVisitor " << typeid(element).name() << std::endl;

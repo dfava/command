@@ -46,6 +46,13 @@ public:
     };
 };
 
+class NSkip : public NExpression {
+public:
+    NSkip () { }
+    virtual SType* typeCheck(Scope* scope);
+    virtual void accept(Visitor &visitor) { visitor.visit(this, V_FLAG_NONE); };
+};
+
 class NInteger : public NExpression {
 public:
     long long value;

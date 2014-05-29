@@ -11,13 +11,14 @@ extern "C" int yywrap() { }
 %%
 
 [ \t\n]                 ;
-"//".*\n                  ;
+"//".*\n                ;
 "int"                   SAVE_TOKEN; return T_TYPE;
 "double"                SAVE_TOKEN; return T_TYPE; 
 "bool"                  SAVE_TOKEN; return T_TYPE;
 "true"                  SAVE_TOKEN; return T_VAL_BOOL;
 "false"                 SAVE_TOKEN; return T_VAL_BOOL;
 "high"                  SAVE_TOKEN; return T_SEC;
+"skip"                  return TOKEN(TSKIP);
 "if"                    return TOKEN(TIF);
 "else"                  return TOKEN(TELSE);
 [a-zA-Z_][a-zA-Z0-9_]*  SAVE_TOKEN; return T_IDENTIFIER;
