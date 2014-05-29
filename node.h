@@ -1,13 +1,12 @@
 #ifndef __NODE_H_
 #define __NODE_H_
+#include "scope.h"
 #include "visitor.h"
-#include "codegen.h"
 #include <iostream>
 #include <vector>
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Type.h>
 
-class CodeGenContext;
 class NStatement;
 class NExpression;
 class NVariableDeclaration;
@@ -22,7 +21,6 @@ class Node {
 public:
     int lineno;
     virtual ~Node() {}
-    virtual llvm::Value* codeGen(Scope* scope) { }
     virtual SType* typeCheck(Scope* scope) { }
     virtual void accept(class Visitor &visitor) { }
 };
@@ -37,7 +35,6 @@ class NBlock : public NExpression {
 public:
     StatementList statements;
     NBlock() { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) {
       visitor.visit(this, V_FLAG_ENTER);
@@ -53,7 +50,6 @@ class NInteger : public NExpression {
 public:
     long long value;
     NInteger(long long value) : value(value) { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) { visitor.visit(this, V_FLAG_NONE); };
 };
@@ -62,7 +58,6 @@ class NBool : public NExpression {
 public:
     std::string value;
     NBool(std::string value) : value(value) { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) { visitor.visit(this, V_FLAG_NONE); };
 };
@@ -71,7 +66,6 @@ class NDouble : public NExpression {
 public:
     double value;
     NDouble(double value) : value(value) { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) { visitor.visit(this, V_FLAG_NONE); };
 };
@@ -80,7 +74,6 @@ class NType : public NExpression {
 public:
     std::string name;
     NType(const std::string& name) : name(name) { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) { visitor.visit(this, V_FLAG_NONE); };
 };
@@ -89,7 +82,6 @@ class NSecurity : public NExpression {
 public:
     std::string name;
     NSecurity(const std::string& name) : name(name) { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) { visitor.visit(this, V_FLAG_NONE); };
 };
@@ -98,7 +90,6 @@ class NIdentifier : public NExpression {
 public:
     std::string name;
     NIdentifier(const std::string& name) : name(name) { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) { visitor.visit(this, V_FLAG_NONE); };
 };
@@ -110,7 +101,6 @@ public:
     NBlock & ielse;
     NIfExpression(NExpression& iguard, NBlock& ithen, NBlock& ielse) :
         iguard(iguard), ithen(ithen), ielse(ielse) { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) {
       visitor.visit(this, V_FLAG_ENTER);
@@ -138,7 +128,6 @@ public:
     NExpression& rhs;
     NBinaryOperator(NExpression& lhs, int op, NExpression& rhs) :
         lhs(lhs), rhs(rhs), op(op) { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) {
       lhs.accept(visitor);
@@ -153,7 +142,6 @@ public:
     NExpression& rhs;
     NAssignment(NIdentifier& lhs, NExpression& rhs) : 
         lhs(lhs), rhs(rhs) { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) {
       rhs.accept(visitor);
@@ -167,7 +155,6 @@ public:
     NExpression& expression;
     NExpressionStatement(NExpression& expression) : 
         expression(expression) { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) {
       expression.accept(visitor);
@@ -185,7 +172,6 @@ public:
         type(type), id(id), security(sec) { }
     NVariableDeclaration(const NType& type, NIdentifier& id, NExpression *assignmentExpr, NSecurity& sec) :
         type(type), id(id), assignmentExpr(assignmentExpr), security(sec) { }
-    virtual llvm::Value* codeGen(Scope* scope);
     virtual SType* typeCheck(Scope* scope);
     virtual void accept(Visitor &visitor) {
       ((NType&)type).accept(visitor);

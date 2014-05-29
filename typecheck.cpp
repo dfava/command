@@ -1,8 +1,10 @@
 #include "node.h"
+#include "scope.h"
 #include "typecheck.h"
 #include "parser.hpp"
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Type.h>
+#include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/LLVMContext.h>
 #include <map>
 #include <iostream>
