@@ -42,6 +42,7 @@ void CodeGenVisitor::init()
 
 void CodeGenVisitor::generateCode()
 {
+  assert(vals.size() == 0);
   //Builder.CreateRetVoid();
   Builder.CreateRet(ConstantInt::get(Type::getInt32Ty(getGlobalContext()), 0, true));
   // Cleanup scopes
@@ -136,8 +137,6 @@ void CodeGenVisitor::visit(NIfExpression* element, uint64_t flag)
   Value *CondV = vals.front();
   vals.pop_front(); // Pop guard
   if (CondV == NULL) {
-    vals.pop_front(); // Pop then
-    vals.pop_front(); // Pop else
     // TODO
     //return NULL;
   }
@@ -155,14 +154,6 @@ void CodeGenVisitor::visit(NIfExpression* element, uint64_t flag)
   // Emit then value.
   Builder.SetInsertPoint(ThenBB);
   
-  Value *ThenV = vals.front();
-  vals.pop_front(); // Pop then
-  if (ThenV == NULL) {
-    vals.pop_front(); // Pop else
-    // TODO
-    //return NULL;
-  }
-  
   Builder.CreateBr(MergeBB);
   // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
   ThenBB = Builder.GetInsertBlock();
@@ -170,13 +161,6 @@ void CodeGenVisitor::visit(NIfExpression* element, uint64_t flag)
   // Emit else block.
   TheFunction->getBasicBlockList().push_back(ElseBB);
   Builder.SetInsertPoint(ElseBB);
-  
-  Value *ElseV = vals.front();
-  vals.pop_front(); // Pop else
-  if (ElseV == NULL) {
-    // TODO
-    // return NULL;
-  }
   
   Builder.CreateBr(MergeBB);
   // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
@@ -238,9 +222,11 @@ void CodeGenVisitor::visit(NBinaryOperator* element, uint64_t flag)
 
 comp:
 	vals.push_front(CmpInst::Create(oinstr, pred, lhsv, rhsv, "", Builder.GetInsertBlock()));
+  return;
 
 math:
 	vals.push_front(BinaryOperator::Create(binstr, lhsv, rhsv, "", Builder.GetInsertBlock()));
+  return;
 }
 
 void CodeGenVisitor::visit(NAssignment* element, uint64_t flag)
@@ -253,21 +239,32 @@ void CodeGenVisitor::visit(NAssignment* element, uint64_t flag)
 	}
   Value* rhsv = vals.front();
   vals.pop_front();
-	vals.push_front(new StoreInst(rhsv,
+  // No need to add StoreInst to vals
+  new StoreInst(rhsv,
                 context->scope->LookUp(element->lhs.name)->value, 
-                false, Builder.GetInsertBlock()));
+                false, Builder.GetInsertBlock());
 }
 
 void CodeGenVisitor::visit(NBlock* element, uint64_t flag)
 {
-  if (sm_inBlock) {
-    if (verbose) std::cout << "CodeGenVisitor leaving " << typeid(element).name() << std::endl;
-    context->scope->FinalizeScope();
-    sm_inBlock = false;
-  } else {
-    if (verbose) std::cout << "CodeGenVisitor entering " << typeid(element).name() << std::endl;
-    context->scope->InitializeScope();
-    sm_inBlock = true;
+  //static int size_on_entering = 0;
+  //static int size_on_leaving = 0;
+  switch (flag)
+  {
+    case V_FLAG_ENTER:
+      if (verbose) std::cout << "CodeGenVisitor entering " << typeid(element).name() << std::endl;
+      //size_on_entering = vals.size();
+      //std::cout << "Size on entering: " << size_on_entering << std::endl;;
+      context->scope->InitializeScope();
+      break;
+    case V_FLAG_EXIT:
+      if (verbose) std::cout << "CodeGenVisitor leaving " << typeid(element).name() << std::endl;
+      //size_on_leaving = vals.size();
+      //std::cout << "Size on leaving: " << size_on_leaving << std::endl;;
+      context->scope->FinalizeScope();
+      break;
+    default:
+      assert(0);
   }
 }
 
@@ -283,4 +280,5 @@ void CodeGenVisitor::visit(NVariableDeclaration* element, uint64_t flag)
                                        element->id.name.c_str(), Builder.GetInsertBlock());
   Symbol* sym = new Symbol(alloc, new SType());
   context->scope->Insert(element->id.name, sym);
+  // No need to add alloc to vals
 }

@@ -17,6 +17,13 @@ class NExpression;
 class NExpressionStatement;
 class NVariableDeclaration;
 
+// Visitor Flags
+enum {
+  V_FLAG_NONE = 0,
+  V_FLAG_ENTER = 1,
+  V_FLAG_EXIT = 2,
+};
+
 class Visitor {
 public:
     virtual void visit(NInteger* nInteger, uint64_t flag) = 0;

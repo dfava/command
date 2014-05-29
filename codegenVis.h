@@ -10,9 +10,6 @@
 
 class CodeGenVisitor : public Visitor {
 private:
-  // Some state machine
-  bool sm_inBlock = false;
-
   char* filename;
   bool verbose = false;
   llvm::Function *mainFunction;
