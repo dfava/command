@@ -89,6 +89,10 @@ static const Type *typeOf(const NType& type)
 void CodeGenVisitor::visit(NSkip* element, uint64_t flag)
 {
   if (verbose) std::cout << "CodeGenVisitor " << typeid(element).name() << std::endl;
+  // Generate a nop
+  vals.push_front(new BitCastInst(Constant::getNullValue(
+        Type::getInt1Ty(getGlobalContext())), 
+        Type::getInt1Ty(getGlobalContext()), "", Builder.GetInsertBlock()));
 }
 
 void CodeGenVisitor::visit(NInteger* element, uint64_t flag)
@@ -128,10 +132,7 @@ void CodeGenVisitor::visit(NIdentifier* element, uint64_t flag)
 {
   if (verbose) std::cout << "CodeGenVisitor " << typeid(element).name() << std::endl;
 	if (context->scope->LookUp(element->name) == NULL) {
-		std::cerr << "undeclared variable " << element->name << std::endl;
-    assert(0);
-    // TODO
-		//return NULL;
+    assert(0); // Caught by type-checker
 	}
 	vals.push_front(new LoadInst(context->scope->LookUp(element->name)->value, 
                                "", false, Builder.GetInsertBlock()));
@@ -148,8 +149,6 @@ void CodeGenVisitor::visit(NIfExpression* element, uint64_t flag)
         vals.pop_front(); // Pop guard
         if (CondV == NULL) {
           assert(0);
-          // TODO
-          //return NULL;
         }
         If* myIf = new If();
         myIf->function = Builder.GetInsertBlock()->getParent();
@@ -258,10 +257,7 @@ void CodeGenVisitor::visit(NAssignment* element, uint64_t flag)
 {
   if (verbose) std::cout << "CodeGenVisitor " << typeid(element).name() << std::endl;
 	if (context->scope->LookUp(element->lhs.name) == NULL) {
-		std::cerr << "undeclared variable " << element->lhs.name << std::endl;
-    assert(0);
-    // TODO
-		//return NULL;
+    assert(0); // Caught by type-checker
 	}
   Value* rhsv = vals.front();
   vals.pop_front();
