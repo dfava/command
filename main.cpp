@@ -5,6 +5,7 @@
 #include "node.h"
 #include "typecheck.h"
 #include "visitor.h"
+#include "typecheckVis.h"
 #include "codegenVis.h"
 
 #define DEBUG 0
@@ -92,6 +93,18 @@ int main(int argc, char **argv)
     if (int ret = yyparse()) return ret;
     DPRNT("programBlock: %p\n", programBlock);
     if (typechecking) {
+      TypeCheckerVisitor typeCheckVis;
+      typeCheckVis.setVerbose(verbose);
+      if (filename != NULL) typeCheckVis.setFileName(filename); // For printing error messages
+      programBlock->accept(typeCheckVis);
+
+      // TODO
+      //if (!typecheckVis.check(*programBlock)) {
+      if (false) {
+        printf("Type checker failed\n");
+        return 1;
+      }
+
       typechecker.setVerbose(verbose);
       if (filename != NULL) typechecker.setFileName(filename); // For printing error messages
       if (!typechecker.check(*programBlock)) {

@@ -16,9 +16,7 @@ public:
 class Symbol {
 public:
   llvm::Value* value;
-  //llvm::Type* type;
   SType* stype;
-  //Symbol(llvm::Value* value, llvm::Type* type) : value(value), type(type) { }
   Symbol(llvm::Value* value, SType* stype) : value(value), stype(stype) { }
 };
 
