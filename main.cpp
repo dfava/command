@@ -3,7 +3,6 @@
 #include <unistd.h> // getopt
 #include <libgen.h> // basename
 #include "node.h"
-#include "typecheck.h"
 #include "visitor.h"
 #include "typecheckVis.h"
 #include "codegenVis.h"
@@ -16,8 +15,6 @@ using namespace std;
 extern int yyparse();
 extern FILE* yyin;
 extern NBlock* programBlock;
-
-TypeChecker typechecker;
 
 void usage(int argc, char** argv) {
     printf("%s:\n", basename(argv[0]));
@@ -97,19 +94,11 @@ int main(int argc, char **argv)
       typeCheckVis.setVerbose(verbose);
       if (filename != NULL) typeCheckVis.setFileName(filename); // For printing error messages
       programBlock->accept(typeCheckVis);
-
-      // TODO
-      //if (!typecheckVis.check(*programBlock)) {
-      if (false) {
+      if (!typeCheckVis.getPassed()) {
         printf("Type checker failed\n");
         return 1;
-      }
-
-      typechecker.setVerbose(verbose);
-      if (filename != NULL) typechecker.setFileName(filename); // For printing error messages
-      if (!typechecker.check(*programBlock)) {
-        printf("Type checker failed\n");
-        return 1;
+      } else {
+        printf("Type-checking passed\n");
       }
     }
     if (geningcode) {

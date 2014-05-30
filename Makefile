@@ -12,5 +12,5 @@ parser.hpp: parser.cpp
 tokens.cpp: tokens.l parser.hpp
 	lex -o $@ $^
 
-command: parser.cpp typecheckVis.cpp typecheckVis.h codegenVis.cpp codegenVis.h main.cpp tokens.cpp typecheck.cpp typecheck.h scope.h node.h visitor.h
+command: parser.cpp typecheckVis.cpp typecheckVis.h codegenVis.cpp codegenVis.h main.cpp tokens.cpp scope.h node.h visitor.h
 	g++ -o $@ `llvm-config --libs core jit native --cxxflags --ldflags` *.cpp -I$(LLVM)/include/ -w -L$(LLVM)/lib/ -lz -frtti -lLLVMBitWriter

@@ -14,6 +14,7 @@ private:
   Scope* scope; 
   std::list<SType*> types;
   std::string if_guard_sec = "low";
+  bool passed = true;
 
 public:
   virtual void visit(NSkip* nSkip, uint64_t flag);
@@ -37,5 +38,6 @@ public:
   void printErrorMessage(std::string message, int lineno);
   void setVerbose(bool v) { verbose = v; };
   bool getVerbose() { return verbose; };
+  bool getPassed() { return passed; };
 };
 #endif // __TYPE_CHECKER_VISITOR_H_
