@@ -90,9 +90,9 @@ void CodeGenVisitor::visit(NSkip* element, uint64_t flag)
 {
   if (verbose) std::cout << "CodeGenVisitor " << typeid(element).name() << std::endl;
   // Generate a nop
-  vals.push_front(new BitCastInst(Constant::getNullValue(
+  new BitCastInst(Constant::getNullValue(
         Type::getInt1Ty(getGlobalContext())), 
-        Type::getInt1Ty(getGlobalContext()), "", Builder.GetInsertBlock()));
+        Type::getInt1Ty(getGlobalContext()), "", Builder.GetInsertBlock());
 }
 
 void CodeGenVisitor::visit(NInteger* element, uint64_t flag)
@@ -104,8 +104,10 @@ void CodeGenVisitor::visit(NInteger* element, uint64_t flag)
 void CodeGenVisitor::visit(NBool* element, uint64_t flag)
 {
   if (verbose) std::cout << "CodeGenVisitor " << typeid(element).name() << std::endl;
-  if (element->value.compare("true") == 0)
+  if (element->value.compare("true") == 0) {
 	  vals.push_front(ConstantInt::getTrue(getGlobalContext()));
+    return;
+  }
   assert (element->value.compare("false") == 0);
 	vals.push_front(ConstantInt::getFalse(getGlobalContext()));
 }
