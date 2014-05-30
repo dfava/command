@@ -13,6 +13,7 @@ private:
   bool verbose = false;
   Scope* scope; 
   std::list<SType*> types;
+  std::string if_guard_sec = "low";
 
 public:
   virtual void visit(NSkip* nSkip, uint64_t flag);

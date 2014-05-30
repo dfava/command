@@ -6,10 +6,7 @@
 #include <llvm/IR/Type.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/LLVMContext.h>
-#include <map>
-#include <iostream>
 #include <fstream>
-#include <sstream>
 #include <string>
 
 using namespace llvm;
@@ -105,10 +102,9 @@ void TypeCheckerVisitor::visit(NIdentifier* element, uint64_t flag)
 	if (sym == NULL) {
     printErrorMessage("Undeclared variable " + element->name, element->lineno);
     // TODO
-		//return NULL;
+    assert(0);
 	}
-  // TODO
-	// return sym->stype;
+  types.push_front(sym->stype);
 }
 
 void TypeCheckerVisitor::visit(NAssignment* element, uint64_t flag)
@@ -119,7 +115,6 @@ void TypeCheckerVisitor::visit(NAssignment* element, uint64_t flag)
     printErrorMessage("Undeclared variable " + element->lhs.name, element->lineno);
     // TODO
     assert(0);
-		//return NULL;
 	}
   SType* dtype = sym->stype;
   SType* atype = types.front();
@@ -127,14 +122,12 @@ void TypeCheckerVisitor::visit(NAssignment* element, uint64_t flag)
   if (dtype == NULL || atype == NULL) {
     // TODO
     assert(0);
-    //return NULL;
   }
   // Check if the scope allow us to write to a low variable
   if (dtype->sec == "low" && scope->getSecurityContext() == "high") {
     printErrorMessage("Failed when trying to assign to a low var from a high context (implicit flow)", element->lineno);
     // TODO
     assert(0);
-    //return NULL;
   }
   if (dtype->type != atype->type) {
     // TODO: Print legible types:
@@ -142,7 +135,6 @@ void TypeCheckerVisitor::visit(NAssignment* element, uint64_t flag)
     printErrorMessage("Failed on types", element->lineno);
     // TODO
     assert(0);
-    //return NULL;
   }
   // If the right hand side expression doesn't have a type,
   // its because it doesn't operate on variables.
@@ -151,7 +143,6 @@ void TypeCheckerVisitor::visit(NAssignment* element, uint64_t flag)
     printErrorMessage("Failed on security (explicit flow)", element->lineno);
     // TODO
     assert(0);
-    //return NULL;
   }
 }
 
@@ -163,7 +154,6 @@ void TypeCheckerVisitor::visit(NVariableDeclaration* element, uint64_t flag)
     printErrorMessage("Variable redeclaration " + element->id.name, element->lineno);
     // TODO
     assert(0);
-    // return NULL;
   }
   SType* tmp;
   // Get info about NSecurity
@@ -172,7 +162,6 @@ void TypeCheckerVisitor::visit(NVariableDeclaration* element, uint64_t flag)
   if (tmp == NULL) {
     // TODO
     assert(0);
-    //return NULL;
   }
   std::string sec = tmp->sec;
   delete tmp;
@@ -182,7 +171,6 @@ void TypeCheckerVisitor::visit(NVariableDeclaration* element, uint64_t flag)
   if (tmp == NULL) {
     // TODO
     assert(0);
-    // return NULL;
   }
   Type* dtype = tmp->type;
   delete tmp;
@@ -192,11 +180,13 @@ void TypeCheckerVisitor::visit(NVariableDeclaration* element, uint64_t flag)
 void TypeCheckerVisitor::visit(NBinaryOperator* element, uint64_t flag)
 {
   if (verbose) std::cout << "TypeCheckerVisitor " << typeid(element).name() << std::endl;
-  SType* tlhs = element->lhs.typeCheck(scope);//TODO
-	SType* trhs = element->rhs.typeCheck(scope);//TODO
+	SType* trhs = types.front();
+  types.pop_front();
+  SType* tlhs = types.front();
+  types.pop_front();
   if (tlhs == NULL || trhs == NULL) {
     // TODO
-    // return NULL;
+    assert(0);
   }
   std::string sec = "";
   if (tlhs->sec == "high" || trhs->sec == "high") {
@@ -208,85 +198,88 @@ void TypeCheckerVisitor::visit(NBinaryOperator* element, uint64_t flag)
 		case TMINUS:
 		case TMUL:
 		case TDIV:
-      if (tlhs->type == trhs->type && tlhs->type == Type::getInt64Ty(getGlobalContext()))
-        // TODO
-        new SType(Type::getInt64Ty(getGlobalContext()), sec);
-      else if (tlhs->type == trhs->type && tlhs->type == Type::getDoubleTy(getGlobalContext()))
-        // TODO
-        new SType(Type::getDoubleTy(getGlobalContext()), sec);
+      if (tlhs->type == trhs->type && tlhs->type == Type::getInt64Ty(getGlobalContext())) {
+        types.push_front(new SType(Type::getInt64Ty(getGlobalContext()), sec));
+        return;
+      } else if (tlhs->type == trhs->type && tlhs->type == Type::getDoubleTy(getGlobalContext())) {
+        types.push_front(new SType(Type::getDoubleTy(getGlobalContext()), sec));
+        return;
+      }
     case TCEQ:
     case TCNE:
     case TCLT:
     case TCLE:
     case TCGT:
     case TCGE :
-      if (tlhs->type == trhs->type && tlhs->type == Type::getInt64Ty(getGlobalContext()))
-        // TODO
-        new SType(Type::getInt1Ty(getGlobalContext()), sec);
-      else if (tlhs->type == trhs->type && tlhs->type == Type::getDoubleTy(getGlobalContext()))
-        // TODO
-        new SType(Type::getInt1Ty(getGlobalContext()), sec);
+      if (tlhs->type == trhs->type && tlhs->type == Type::getInt64Ty(getGlobalContext())) {
+        types.push_front(new SType(Type::getInt1Ty(getGlobalContext()), sec));
+        return;
+      } else if (tlhs->type == trhs->type && tlhs->type == Type::getDoubleTy(getGlobalContext())) {
+        types.push_front(new SType(Type::getInt1Ty(getGlobalContext()), sec));
+        return;
+      }
     default:
       printErrorMessage( "Type mismatch on binary operator", element->lineno );
       // TODO
-	    // return NULL;
+      assert(0);
 	}
 }
 
 void TypeCheckerVisitor::visit(NIfExpression* element, uint64_t flag)
 {
-  if (verbose) std::cout << "TypeCheckerVisitor " << typeid(element).name() << std::endl;
-  SType* gtype = element->iguard.typeCheck(scope);//TODO
-  if (gtype == NULL) {
-    // TODO
-    //return NULL;
+  switch (flag)
+  {
+    case V_FLAG_IF_GUARD | V_FLAG_EXIT:
+      {
+        if (verbose) std::cout << "TypeCheckerVisitor if-guard-enter " << typeid(element).name() << std::endl;
+        SType* gtype = types.front();
+        types.pop_front();
+        assert(gtype != NULL);
+        if (gtype->type != Type::getInt1Ty(getGlobalContext())) {
+          printErrorMessage("Failed on the guard", element->lineno);
+          // TODO
+          assert(0);
+        }
+        if_guard_sec = gtype->sec;
+        return;
+      }
+    case V_FLAG_IF_THEN | V_FLAG_EXIT:
+      {
+        if (verbose) std::cout << "TypeCheckerVisitor then-exit " << typeid(element).name() << std::endl;
+        SType* ttype = types.front();
+        types.pop_front();
+        assert(ttype != NULL);
+        if (ttype->type != Type::getVoidTy(getGlobalContext())) {
+          printErrorMessage("Failed on the then", element->lineno);
+          // TODO
+          assert(0);
+        }
+      }
+      return;
+    case V_FLAG_IF_ELSE | V_FLAG_EXIT:
+      {
+        if (verbose) std::cout << "TypeCheckerVisitor else-exit " << typeid(element).name() << std::endl;
+        SType* etype = types.front();
+        types.pop_front();
+        assert(etype != NULL);
+        if (etype->type != Type::getVoidTy(getGlobalContext())) {
+          printErrorMessage("Failed on the else", element->lineno);
+          // TODO
+          assert(0);
+        }
+      }
+      return;
+    case V_FLAG_EXIT:
+      if_guard_sec = "";
+      return;
+    default:
+      return;
   }
-  if (gtype->type != Type::getInt1Ty(getGlobalContext())) {
-    printErrorMessage("Failed on the guard", element->lineno);
-    // TODO
-	  //return NULL;
-  }
-
-  if (getVerbose()) std::cout << "(Branch) Creating a new scope of security type: " << gtype->sec << std::endl;
-  scope->InitializeScope("branch", (scope->getSecurityContext() == "high" ? "high" : gtype->sec)); // Create a new scope for this branch
-  SType* ttype = element->ithen.typeCheck(scope);//TODO
-  if (ttype == NULL) {
-    scope->FinalizeScope();
-    // TODO
-    //return NULL;
-  }
-  if (ttype->type != Type::getVoidTy(getGlobalContext())) {
-    printErrorMessage("Failed on the then", element->lineno);
-    scope->FinalizeScope();
-    // TODO
-	  //return NULL;
-  }
-  scope->FinalizeScope();
-
-  scope->InitializeScope("branch", (scope->getSecurityContext() == "high" ? "high" : gtype->sec)); // Create a new scope for this branch
-  SType* etype = element->ielse.typeCheck(scope);//TODO
-  if (etype == NULL) {
-    scope->FinalizeScope();
-    // TODO
-    //return NULL;
-  }
-  if (etype->type != Type::getVoidTy(getGlobalContext())) {
-    printErrorMessage("Failed on the else", element->lineno);
-    scope->FinalizeScope();
-    // TODO
-	  //return NULL;
-  }
-  scope->FinalizeScope();
-
-  // TODO
-  new SType(Type::getVoidTy(getGlobalContext()), "");
 }
 
 void TypeCheckerVisitor::visit(NExpressionStatement* element, uint64_t flag)
 {
   if (verbose) std::cout << "TypeCheckerVisitor " << typeid(element).name() << std::endl;
-  // TODO
-	element->expression.typeCheck(scope);//TODO
 }
 
 void TypeCheckerVisitor::visit(NBlock* element, uint64_t flag)
@@ -296,15 +289,20 @@ void TypeCheckerVisitor::visit(NBlock* element, uint64_t flag)
   switch (flag)
   {
     case V_FLAG_ENTER:
-      if (verbose) std::cout << "TypeCheckerVisitor entering " << typeid(element).name() << std::endl;
-      size_on_entering = types.size();
-      std::cout << "Size on entering: " << size_on_entering << std::endl;;
-      scope->InitializeScope();
+      {
+        if (verbose) std::cout << "TypeCheckerVisitor entering " << typeid(element).name() << std::endl;
+        size_on_entering = types.size();
+        //std::cout << "Size on entering: " << size_on_entering << std::endl;;
+        std::string next_sec = scope->getSecurityContext() == "high" ? "high" : if_guard_sec;
+        next_sec = (next_sec == "" ? "low" : next_sec);
+        std::cout << "TypeCheckerVisitor initializing scope to: " << next_sec << std::endl;;
+        scope->InitializeScope("", next_sec);
+      }
       break;
     case V_FLAG_EXIT:
       if (verbose) std::cout << "TypeCheckerVisitor leaving " << typeid(element).name() << std::endl;
       size_on_leaving = types.size();
-      std::cout << "Size on leaving: " << size_on_leaving << std::endl;;
+      //std::cout << "Size on leaving: " << size_on_leaving << std::endl;;
       scope->FinalizeScope();
       break;
     default:

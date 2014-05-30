@@ -139,12 +139,11 @@ void CodeGenVisitor::visit(NIdentifier* element, uint64_t flag)
 
 void CodeGenVisitor::visit(NIfExpression* element, uint64_t flag)
 {
-  if (verbose) std::cout << "CodeGenVisitor " << typeid(element).name() << std::endl;
   switch (flag)
   {
     case V_FLAG_IF_GUARD | V_FLAG_EXIT:
       {
-        if (verbose) std::cout << "CodeGenVisitor enter " << typeid(element).name() << std::endl;
+        if (verbose) std::cout << "CodeGenVisitor if-guard-enter" << typeid(element).name() << std::endl;
         Value *CondV = vals.front();
         vals.pop_front(); // Pop guard
         if (CondV == NULL) {
