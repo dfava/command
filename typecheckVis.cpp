@@ -233,7 +233,7 @@ void TypeCheckerVisitor::visit(NIfExpression* element, uint64_t flag)
 {
   switch (flag)
   {
-    case V_FLAG_IF_GUARD | V_FLAG_EXIT:
+    case V_FLAG_GUARD | V_FLAG_EXIT:
       {
         if (verbose) std::cout << "TypeCheckerVisitor if-guard-enter " << typeid(element).name() << std::endl;
         SType* gtype = types.front();
@@ -244,11 +244,37 @@ void TypeCheckerVisitor::visit(NIfExpression* element, uint64_t flag)
           passed = false;
           return;
         }
-        if_guard_sec = gtype->sec;
+        guard_sec = gtype->sec;
       }
       return;
     case V_FLAG_EXIT:
-      if_guard_sec = "";
+      guard_sec = "";
+      return;
+    default:
+      return;
+  }
+}
+
+void TypeCheckerVisitor::visit(NWhileExpression* element, uint64_t flag)
+{
+  switch (flag)
+  {
+    case V_FLAG_GUARD | V_FLAG_EXIT:
+      {
+        if (verbose) std::cout << "TypeCheckerVisitor while-guard-enter " << typeid(element).name() << std::endl;
+        SType* gtype = types.front();
+        types.pop_front();
+        assert(gtype != NULL);
+        if (gtype->type != Type::getInt1Ty(getGlobalContext())) {
+          printErrorMessage("Failed on the guard", element->lineno);
+          passed = false;
+          return;
+        }
+        guard_sec = gtype->sec;
+      }
+      return;
+    case V_FLAG_EXIT:
+      guard_sec = "";
       return;
     default:
       return;
@@ -271,7 +297,7 @@ void TypeCheckerVisitor::visit(NBlock* element, uint64_t flag)
         if (verbose) std::cout << "TypeCheckerVisitor entering " << typeid(element).name() << std::endl;
         size_on_entering = types.size();
         //std::cout << "Size on entering: " << size_on_entering << std::endl;;
-        std::string next_sec = scope->getSecurityContext() == "high" ? "high" : if_guard_sec;
+        std::string next_sec = scope->getSecurityContext() == "high" ? "high" : guard_sec;
         next_sec = (next_sec == "" ? "low" : next_sec);
         std::cout << "TypeCheckerVisitor initializing scope to: " << next_sec << std::endl;;
         scope->InitializeScope("", next_sec);

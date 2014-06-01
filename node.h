@@ -102,17 +102,38 @@ public:
     virtual void accept(Visitor &visitor) {
       visitor.visit(this, V_FLAG_ENTER);
 
-      visitor.visit(this, V_FLAG_IF_GUARD | V_FLAG_ENTER);
+      visitor.visit(this, V_FLAG_GUARD | V_FLAG_ENTER);
       iguard.accept(visitor);
-      visitor.visit(this, V_FLAG_IF_GUARD | V_FLAG_EXIT);
+      visitor.visit(this, V_FLAG_GUARD | V_FLAG_EXIT);
 
-      visitor.visit(this, V_FLAG_IF_THEN | V_FLAG_ENTER);
+      visitor.visit(this, V_FLAG_THEN | V_FLAG_ENTER);
       ithen.accept(visitor);
-      visitor.visit(this, V_FLAG_IF_THEN | V_FLAG_EXIT);
+      visitor.visit(this, V_FLAG_THEN | V_FLAG_EXIT);
 
-      visitor.visit(this, V_FLAG_IF_ELSE | V_FLAG_ENTER);
+      visitor.visit(this, V_FLAG_ELSE | V_FLAG_ENTER);
       ielse.accept(visitor);
-      visitor.visit(this, V_FLAG_IF_ELSE | V_FLAG_EXIT);
+      visitor.visit(this, V_FLAG_ELSE | V_FLAG_EXIT);
+
+      visitor.visit(this, V_FLAG_EXIT);
+    };
+};
+
+class NWhileExpression : public NExpression {
+public:
+    NExpression& iguard;
+    NBlock & ithen;
+    NWhileExpression(NExpression& iguard, NBlock& ithen) :
+        iguard(iguard), ithen(ithen) { }
+    virtual void accept(Visitor &visitor) {
+      visitor.visit(this, V_FLAG_ENTER);
+
+      visitor.visit(this, V_FLAG_GUARD | V_FLAG_ENTER);
+      iguard.accept(visitor);
+      visitor.visit(this, V_FLAG_GUARD | V_FLAG_EXIT);
+
+      visitor.visit(this, V_FLAG_THEN | V_FLAG_ENTER);
+      ithen.accept(visitor);
+      visitor.visit(this, V_FLAG_THEN | V_FLAG_EXIT);
 
       visitor.visit(this, V_FLAG_EXIT);
     };

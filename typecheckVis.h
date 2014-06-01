@@ -13,7 +13,7 @@ private:
   bool verbose = false;
   Scope* scope; 
   std::list<SType*> types;
-  std::string if_guard_sec = "low";
+  std::string guard_sec = "low";
   bool passed = true;
 
 public:
@@ -25,6 +25,7 @@ public:
   virtual void visit(NSecurity* nSecurity, uint64_t flag);
   virtual void visit(NIdentifier* nIdentifier, uint64_t flag);
   virtual void visit(NIfExpression* nIfExpression, uint64_t flag);
+  virtual void visit(NWhileExpression* nWhileExpression, uint64_t flag);
   virtual void visit(NBinaryOperator* nBinaryOperator, uint64_t flag);
   virtual void visit(NAssignment* nAssignment, uint64_t flag);
   virtual void visit(NBlock* nBlock, uint64_t flag);

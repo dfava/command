@@ -11,6 +11,7 @@ class NType;
 class NSecurity;
 class NIdentifier;
 class NIfExpression;
+class NWhileExpression;
 class NBinaryOperator;
 class NAssignment;
 class NBlock;
@@ -23,9 +24,9 @@ enum {
   V_FLAG_NONE = -1,
   V_FLAG_ENTER = 0,
   V_FLAG_EXIT = 1,
-  V_FLAG_IF_GUARD = 8,
-  V_FLAG_IF_THEN = 0xc,
-  V_FLAG_IF_ELSE = 0xe,
+  V_FLAG_GUARD = 8,
+  V_FLAG_THEN = 0xc,
+  V_FLAG_ELSE = 0xe,
 };
 
 class Visitor {
@@ -38,6 +39,7 @@ public:
     virtual void visit(NSecurity* nSecurity, uint64_t flag) = 0;
     virtual void visit(NIdentifier* nIdentifier, uint64_t flag) = 0;
     virtual void visit(NIfExpression* nIfExpression, uint64_t flag) = 0;
+    virtual void visit(NWhileExpression* nWhileExpression, uint64_t flag) = 0;
     virtual void visit(NBinaryOperator* nBinaryOperator, uint64_t flag) = 0;
     virtual void visit(NAssignment* nAssignment, uint64_t flag) = 0;
     virtual void visit(NBlock* nBlock, uint64_t flag) = 0;
