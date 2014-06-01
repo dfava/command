@@ -144,7 +144,7 @@ void CodeGenVisitor::visit(NIfExpression* element, uint64_t flag)
 {
   switch (flag)
   {
-    case V_FLAG_IF_GUARD | V_FLAG_EXIT:
+    case V_FLAG_GUARD | V_FLAG_EXIT:
       {
         if (verbose) std::cout << "CodeGenVisitor if-guard-enter" << typeid(element).name() << std::endl;
         Value *CondV = vals.front();
@@ -163,24 +163,77 @@ void CodeGenVisitor::visit(NIfExpression* element, uint64_t flag)
         ifs.push_front(myIf);
       }
       break;
-    case V_FLAG_IF_THEN | V_FLAG_ENTER:
+    case V_FLAG_THEN | V_FLAG_ENTER:
       if (verbose) std::cout << "CodeGenVisitor then-enter " << typeid(element).name() << std::endl;
       // Emit then block.
       Builder.SetInsertPoint(ifs.front()->thenBB);
       break;
-    case V_FLAG_IF_THEN | V_FLAG_EXIT:
+    case V_FLAG_THEN | V_FLAG_EXIT:
       if (verbose) std::cout << "CodeGenVisitor then-exit " << typeid(element).name() << std::endl;
       Builder.CreateBr(ifs.front()->mergeBB);
       break;
-    case V_FLAG_IF_ELSE | V_FLAG_ENTER:
+    case V_FLAG_ELSE | V_FLAG_ENTER:
       if (verbose) std::cout << "CodeGenVisitor else-enter " << typeid(element).name() << std::endl;
       // Emit else block.
       ifs.front()->function->getBasicBlockList().push_back(ifs.front()->elseBB);
       Builder.SetInsertPoint(ifs.front()->elseBB);
       break;
-    case V_FLAG_IF_ELSE | V_FLAG_EXIT:
+    case V_FLAG_ELSE | V_FLAG_EXIT:
       if (verbose) std::cout << "CodeGenVisitor else-exit " << typeid(element).name() << std::endl;
       Builder.CreateBr(ifs.front()->mergeBB);
+      break;
+    case V_FLAG_EXIT:
+      if (verbose) std::cout << "CodeGenVisitor exit " << typeid(element).name() << std::endl;
+      // Emit merge block.
+      ifs.front()->function->getBasicBlockList().push_back(ifs.front()->mergeBB);
+      Builder.SetInsertPoint(ifs.front()->mergeBB);
+      {
+        If* myIf = ifs.front();
+        delete myIf;
+      }
+      ifs.pop_front();
+      break;
+    default:
+      return;
+  }
+  // No need to add anything to vals
+}
+
+// TODO: Fix bug
+void CodeGenVisitor::visit(NWhileExpression* element, uint64_t flag)
+{
+  switch (flag)
+  {
+    case V_FLAG_GUARD | V_FLAG_EXIT:
+      {
+        if (verbose) std::cout << "CodeGenVisitor while-guard-enter" << typeid(element).name() << std::endl;
+        Value *CondV = vals.front();
+        //vals.pop_front(); // Pop guard
+        if (CondV == NULL) {
+          assert(0);
+        }
+        If* myIf = new If();
+        myIf->function = Builder.GetInsertBlock()->getParent();
+        // Create blocks for the body of the loop and the fall through.
+        myIf->thenBB = BasicBlock::Create(getGlobalContext(), "while.then", myIf->function);
+        myIf->mergeBB = BasicBlock::Create(getGlobalContext(), "while.end");
+        Builder.CreateCondBr(CondV, myIf->thenBB, myIf->mergeBB);
+        ifs.push_front(myIf);
+      }
+      break;
+    case V_FLAG_THEN | V_FLAG_ENTER:
+      if (verbose) std::cout << "CodeGenVisitor then-enter " << typeid(element).name() << std::endl;
+      // Emit then block.
+      Builder.SetInsertPoint(ifs.front()->thenBB);
+      break;
+    case V_FLAG_THEN | V_FLAG_EXIT:
+      {
+        if (verbose) std::cout << "CodeGenVisitor then-exit " << typeid(element).name() << std::endl;
+        Value *CondV = vals.front();
+        vals.pop_front(); // Pop guard
+        Builder.CreateCondBr(CondV, ifs.front()->thenBB, ifs.front()->mergeBB);
+        //Builder.CreateBr(ifs.front()->thenBB);
+      }
       break;
     case V_FLAG_EXIT:
       if (verbose) std::cout << "CodeGenVisitor exit " << typeid(element).name() << std::endl;
