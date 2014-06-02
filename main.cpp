@@ -22,6 +22,7 @@ void usage(int argc, char** argv) {
     printf("    -f [fname] : Input file.\n");
     printf("    -g [0,1]   : Turn code generation off (0) or on (1). Defaults to on.\n");
     printf("    -h         : Print usage.\n");
+    printf("    -r [0,1]   : Turn running of the compiled code off (0) or on (1). Defaults to on.\n");
     printf("    -t [0,1]   : Turn type checking off (0) or on (1). Defaults to on.\n");
     printf("    -v [0,1]   : Turn verbosity off (0) or on (1). Defaults to off.\n");
 }
@@ -31,10 +32,11 @@ int main(int argc, char **argv)
     bool typechecking = true;
     bool geningcode = true;
     bool verbose = false;
+    bool running = true;
     char* filename = NULL;
     int c;
     opterr = 0;
-    while ((c = getopt (argc, argv, "f:g:ht:v:")) != -1)
+    while ((c = getopt (argc, argv, "f:g:hr:t:v:")) != -1)
        switch (c)
        {
        case 'f':
@@ -47,6 +49,16 @@ int main(int argc, char **argv)
            geningcode = true;
          } else {
            fprintf(stderr, "ERR: Options to -g are either 0 for no codegen or 1 for codegen\n" );
+           return 1;
+         }
+         break;
+       case 'r':
+         if (strncmp(optarg, "0", 1)==0) {
+           running = false;
+         } else if (strncmp(optarg, "1", 1)==0) {
+           running = true;
+         } else {
+           fprintf(stderr, "ERR: Options to -r are either 0 for no running or 1 for running\n" );
            return 1;
          }
          break;
@@ -87,6 +99,9 @@ int main(int argc, char **argv)
       DPRNT( "%s\n", filename);
       yyin = fhandle;
     }
+    if (running) {
+      geningcode = true; // Running forces code generation
+    }
     if (int ret = yyparse()) return ret;
     DPRNT("programBlock: %p\n", programBlock);
     if (typechecking) {
@@ -108,7 +123,9 @@ int main(int argc, char **argv)
       codeGenVis.setVerbose(verbose);
       programBlock->accept(codeGenVis);
       codeGenVis.generateCode();
-      codeGenVis.runCode();
+      if (running) {
+        codeGenVis.runCode();
+      }
     }
     
     return 0;
