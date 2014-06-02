@@ -17,6 +17,13 @@ private:
     llvm::BasicBlock *elseBB = NULL;
     llvm::BasicBlock *mergeBB = NULL;
   };
+  class While {
+  public:
+    llvm::Function *function = NULL;
+    llvm::BasicBlock *condBB = NULL;
+    llvm::BasicBlock *bodyBB = NULL;
+    llvm::BasicBlock *endBB = NULL;
+  };
 
   char* filename;
   bool verbose = false;
@@ -24,6 +31,7 @@ private:
   //llvm::IRBuilder<> *Builder = NULL;
   std::list<llvm::Value*> vals;
   std::list<If*> ifs;
+  std::list<While*> whiles;
 
   class CodeGenContext {
   public:

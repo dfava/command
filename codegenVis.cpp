@@ -146,7 +146,7 @@ void CodeGenVisitor::visit(NIfExpression* element, uint64_t flag)
   {
     case V_FLAG_GUARD | V_FLAG_EXIT:
       {
-        if (verbose) std::cout << "CodeGenVisitor if-guard-enter" << typeid(element).name() << std::endl;
+        if (verbose) std::cout << "CodeGenVisitor if-guard-exit" << typeid(element).name() << std::endl;
         Value *CondV = vals.front();
         vals.pop_front(); // Pop guard
         if (CondV == NULL) {
@@ -199,52 +199,67 @@ void CodeGenVisitor::visit(NIfExpression* element, uint64_t flag)
   // No need to add anything to vals
 }
 
-// TODO: Fix bug
 void CodeGenVisitor::visit(NWhileExpression* element, uint64_t flag)
 {
   switch (flag)
   {
-    case V_FLAG_GUARD | V_FLAG_EXIT:
+    case V_FLAG_GUARD | V_FLAG_ENTER:
       {
         if (verbose) std::cout << "CodeGenVisitor while-guard-enter" << typeid(element).name() << std::endl;
-        Value *CondV = vals.front();
-        //vals.pop_front(); // Pop guard
-        if (CondV == NULL) {
-          assert(0);
-        }
-        If* myIf = new If();
-        myIf->function = Builder.GetInsertBlock()->getParent();
-        // Create blocks for the body of the loop and the fall through.
-        myIf->thenBB = BasicBlock::Create(getGlobalContext(), "while.then", myIf->function);
-        myIf->mergeBB = BasicBlock::Create(getGlobalContext(), "while.end");
-        Builder.CreateCondBr(CondV, myIf->thenBB, myIf->mergeBB);
-        ifs.push_front(myIf);
+        While* myWhile = new While();
+        whiles.push_front(myWhile);
+        whiles.front()->function = Builder.GetInsertBlock()->getParent();
+        // There will be three basic blocks:
+        //   1) condBB ("while.cond")
+        //      perform the check for the loop condition. If true, branch to while.body, otherwise branch to while.end
+        //   2) bodyBB ("while.body") 
+        //      run the loop body then unconditionally branch to while.cond
+        //   3) endBB  ("while.end")
+        //      gets branched to from while.cond
+        //
+        //  Note that initially there will be an unconditional branch to while.cond
+        //  to see if the loop need to be executed at least once,
+        //  or if the loop is to be skipped without executing at all
+        whiles.front()->condBB = BasicBlock::Create(getGlobalContext(), "while.cond", whiles.front()->function);
+        whiles.front()->bodyBB = BasicBlock::Create(getGlobalContext(), "while.body");
+        whiles.front()->endBB = BasicBlock::Create(getGlobalContext(), "while.end");
+        Builder.CreateBr(whiles.front()->condBB);
+        Builder.SetInsertPoint(whiles.front()->condBB);
+      }
+      break;
+    case V_FLAG_GUARD | V_FLAG_EXIT:
+      {
+        if (verbose) std::cout << "CodeGenVisitor while-guard-exit" << typeid(element).name() << std::endl;
       }
       break;
     case V_FLAG_THEN | V_FLAG_ENTER:
-      if (verbose) std::cout << "CodeGenVisitor then-enter " << typeid(element).name() << std::endl;
-      // Emit then block.
-      Builder.SetInsertPoint(ifs.front()->thenBB);
+      {
+        if (verbose) std::cout << "CodeGenVisitor body-enter " << typeid(element).name() << std::endl;
+        Value *CondV = vals.front();
+        vals.pop_front(); // Pop guard
+        if (CondV == NULL) {
+          assert(0);
+        }
+        Builder.CreateCondBr(CondV, whiles.front()->bodyBB, whiles.front()->endBB);
+        whiles.front()->function->getBasicBlockList().push_back(whiles.front()->bodyBB);
+        Builder.SetInsertPoint(whiles.front()->bodyBB);
+      }
       break;
     case V_FLAG_THEN | V_FLAG_EXIT:
       {
-        if (verbose) std::cout << "CodeGenVisitor then-exit " << typeid(element).name() << std::endl;
-        Value *CondV = vals.front();
-        vals.pop_front(); // Pop guard
-        Builder.CreateCondBr(CondV, ifs.front()->thenBB, ifs.front()->mergeBB);
-        //Builder.CreateBr(ifs.front()->thenBB);
+        if (verbose) std::cout << "CodeGenVisitor body-exit " << typeid(element).name() << std::endl;
+        Builder.CreateBr(whiles.front()->condBB);
       }
       break;
     case V_FLAG_EXIT:
       if (verbose) std::cout << "CodeGenVisitor exit " << typeid(element).name() << std::endl;
-      // Emit merge block.
-      ifs.front()->function->getBasicBlockList().push_back(ifs.front()->mergeBB);
-      Builder.SetInsertPoint(ifs.front()->mergeBB);
+      whiles.front()->function->getBasicBlockList().push_back(whiles.front()->endBB);
+      Builder.SetInsertPoint(whiles.front()->endBB);
       {
-        If* myIf = ifs.front();
-        delete myIf;
+        While* myWhile = whiles.front();
+        delete myWhile;
       }
-      ifs.pop_front();
+      whiles.pop_front();
       break;
     default:
       return;
