@@ -93,31 +93,31 @@ sec : T_SEC { $$ = new NSecurity(*$1); delete $1; $$->lineno = yylineno; }
  
 expr : ident TEQUAL expr TSC { $$ = new NAssignment(*$<ident>1, *$3); $$->lineno = yylineno; }
      | TSKIP TSC { $$ = new NSkip(); $$->lineno = yylineno; }
-     | ident { $<ident>$ = $1; }
+     | ident { $<ident>$ = $1; $$->lineno = yylineno; }
      | TIF expr TLBRACE block TRBRACE TELSE TLBRACE block TRBRACE { $$ = new NIfExpression(*$2, *$4, *$8); }
      | TWHILE expr TLBRACE block TRBRACE { $$ = new NWhileExpression(*$2, *$4); }
      | numeric
      | boolean 
      | expr TPLUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); $$->lineno = yylineno; }
-     | expr TMINUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr TMUL expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr TDIV expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr TCEQ expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr TCNE expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr TCLT expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr TCLE expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr TCGT expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
-     | expr TCGE expr { $$ = new NBinaryOperator(*$1, $2, *$3); }
+     | expr TMINUS expr { $$ = new NBinaryOperator(*$1, $2, *$3); $$->lineno = yylineno; }
+     | expr TMUL expr { $$ = new NBinaryOperator(*$1, $2, *$3); $$->lineno = yylineno; }
+     | expr TDIV expr { $$ = new NBinaryOperator(*$1, $2, *$3); $$->lineno = yylineno; }
+     | expr TCEQ expr { $$ = new NBinaryOperator(*$1, $2, *$3); $$->lineno = yylineno; }
+     | expr TCNE expr { $$ = new NBinaryOperator(*$1, $2, *$3); $$->lineno = yylineno; }
+     | expr TCLT expr { $$ = new NBinaryOperator(*$1, $2, *$3); $$->lineno = yylineno; }
+     | expr TCLE expr { $$ = new NBinaryOperator(*$1, $2, *$3); $$->lineno = yylineno; }
+     | expr TCGT expr { $$ = new NBinaryOperator(*$1, $2, *$3); $$->lineno = yylineno; }
+     | expr TCGE expr { $$ = new NBinaryOperator(*$1, $2, *$3); $$->lineno = yylineno; }
      | TLPAREN expr TRPAREN { $$ = $2; }
      ;
 
-ident : T_IDENTIFIER { $$ = new NIdentifier(*$1); delete $1; }
+ident : T_IDENTIFIER { $$ = new NIdentifier(*$1); delete $1; $$->lineno = yylineno; }
       ;
 
-numeric : T_VAL_INTEGER { $$ = new NInteger(atol($1->c_str())); delete $1; }
-        | T_VAL_DOUBLE { $$ = new NDouble(atof($1->c_str())); delete $1; }
+numeric : T_VAL_INTEGER { $$ = new NInteger(atol($1->c_str())); delete $1; $$->lineno = yylineno; }
+        | T_VAL_DOUBLE { $$ = new NDouble(atof($1->c_str())); delete $1; $$->lineno = yylineno; }
         ;
 
-boolean : T_VAL_BOOL { $$ = new NBool($1->c_str()); delete $1; }
+boolean : T_VAL_BOOL { $$ = new NBool($1->c_str()); delete $1; $$->lineno = yylineno; }
         ;
 %%

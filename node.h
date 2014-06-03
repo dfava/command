@@ -192,6 +192,7 @@ public:
       visitor.visit(this, V_FLAG_NONE); // Must declare the variable before assign
 	    if (assignmentExpr != NULL) {
 		    NAssignment assign(id, *assignmentExpr);
+        assign.lineno = lineno;
         assign.accept(visitor);
       }
     };
