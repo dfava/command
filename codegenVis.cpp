@@ -52,7 +52,7 @@ void CodeGenVisitor::generateCode()
   verifyFunction(*mainFunction);
   // Dump IR to screen
 	if (verbose) std::cout << "Code is generated." << std::endl;
-  context->module->dump();
+  if (verbose) context->module->dump();
   if (filename != NULL) {
     LLVMWriteBitcodeToFile((LLVMOpaqueModule *)context->module, filename);
   }

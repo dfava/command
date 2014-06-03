@@ -113,7 +113,7 @@ int main(int argc, char **argv)
         printf("Type checker failed\n");
         return 1;
       } else {
-        printf("Type-checking passed\n");
+        if (verbose) printf("Type-checking passed\n");
       }
     }
     if (geningcode) {

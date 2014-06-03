@@ -299,7 +299,7 @@ void TypeCheckerVisitor::visit(NBlock* element, uint64_t flag)
         //std::cout << "Size on entering: " << size_on_entering << std::endl;;
         std::string next_sec = scope->getSecurityContext() == "high" ? "high" : guard_sec;
         next_sec = (next_sec == "" ? "low" : next_sec);
-        std::cout << "TypeCheckerVisitor initializing scope to: " << next_sec << std::endl;;
+        if (verbose) std::cout << "TypeCheckerVisitor initializing scope to: " << next_sec << std::endl;;
         scope->InitializeScope("", next_sec);
       }
       break;
