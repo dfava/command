@@ -1,7 +1,7 @@
 command
 =======
 
-Project involving Flex, Bison, LLVM, C/C++, type checking and compilers.
+Very simple information flow aware compiler with Flex, Bison, LLVM, C/C++.
 
 The goal was to implement a basic compiler and type checker for a simple
 programming language used to describe information flow concepts on a paper
